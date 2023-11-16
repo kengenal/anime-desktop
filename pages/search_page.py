@@ -1,30 +1,94 @@
-from gi.repository import Gtk
+import gi
 
+from gi.repository import Gtk, GLib
+
+from pages.detail_page import DetailPage
+from widgets.card_widget_search import CardSearchWidget
+
+gi.require_version('Gtk', '4.0')
+from services.jikan_service import JikanService
 from widgets.page import Page
 
 
 class SearchPage(Page):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.set_orientation(orientation=Gtk.Orientation.VERTICAL)
+        self.has_next_page = True
+        self.is_loading = False
+        self.page = None
+        self.jikan_service = JikanService()
         self.search = Gtk.SearchEntry()
+        self.flow_box = Gtk.FlowBox()
+        self.flow_box.set_column_spacing(20)
 
-        button = Gtk.Button(label="Change")
-        button.connect("clicked", self.change_direction)
-        button.set_halign(align=Gtk.Align.CENTER)
-        button.set_valign(align=Gtk.Align.CENTER)
-        button.set_hexpand(expand=True)
-        button.set_vexpand(expand=True)
-        self.append(button)
+        self.flow_box.set_max_children_per_line(50)
+
+        self.scroll_window = Gtk.ScrolledWindow()
+        self.scroll_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self.scroll_window.set_hexpand(True)
+        self.scroll_window.set_vexpand(True)
+        self.scroll_window.set_child(self.flow_box)
+
+        self.scroll_window.connect("edge-reached", self.scroll_position)
+        self.loader = Gtk.Spinner(spinning=True, visible=True)
+
+        self.loader.set_size_request(20, 20)
+
+        self.append(self.scroll_window)
+        self.append(self.loader)
+
         self.on_load()
 
-    def change_direction(self, *args, **kwargs):
-        pass
+        GLib.idle_add(self.gat_data)
 
     def on_load(self):
         self.header_bar.pack_start(self.search)
 
     def on_destroy(self):
         self.header_bar.remove(self.search)
+
+    def gat_data(self):
+        self.is_loading = True
+        self.loader_activate()
+        data = self.jikan_service.fetch_data(page=self.page)
+        if data:
+            self.has_next_page = data.pagination.has_next_page
+            self.page = data.pagination.has_next_page
+
+            for anime in data.data:
+                button = Gtk.Button()
+
+                button.set_child(CardSearchWidget(anime=anime))
+                button.connect("clicked", self.go_to_detail, anime.mal_id)
+                button.set_size_request(100, 100)
+                self.flow_box.append(button)
+
+        self.loader_deactivate()
+        self.is_loading = False
+
+    def scroll_position(self, scroll_window: Gtk.ScrolledWindow, position: Gtk.PositionType):
+        if position == Gtk.PositionType.BOTTOM and self.has_next_page and not self.is_loading:
+            self.page += 1
+            GLib.idle_add(self.gat_data)
+
+    def loader_activate(self):
+        self.loader.set_spinning(True)
+        self.loader.set_visible(True)
+
+    def go_to_detail(self, button: Gtk.Button, mal_id: int):
+        destination = DetailPage(
+            mal_id=mal_id,
+            user_store=self.user_store,
+            stack=self.stack,
+            header_bar=self.header_bar,
+        )
+        self.stack.add_named(child=destination)
+        self.stack.set_visible_child(destination)
+
+    def loader_deactivate(self):
+        self.loader.set_spinning(False)
+        self.loader.set_visible(False)
 
     class Meta:
         name = "search"

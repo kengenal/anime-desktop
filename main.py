@@ -19,6 +19,7 @@ class MainWindow(Gtk.ApplicationWindow):
         super().__init__(*args, **kwargs)
         self.user_store = UserStore()
         self.authorized_pages = [WatchingPage.Meta.name, SettingsPage.Meta.name]
+        self.last_navigation_page = None
         self.unauthorized_pages = [LoginPage.Meta.name]
         self.pages = [SearchPage.Meta.name] + self.unauthorized_pages + self.authorized_pages
         self.set_title(title="Anime App")
@@ -51,17 +52,22 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def stack_signal(self, *args, **kwargs):
         if self.stack.get_visible_child_name() in self.pages:
+            self.last_navigation_page = self.stack.get_visible_child_name()
             self.back_button.set_visible(False)
         else:
             self.back_button.set_visible(True)
 
     def go_back(self, *args, **kwargs):
         page_to_remove = self.stack.get_pages()[-1]
+        destination: Gtk.StackPage = self.stack.get_pages()[-2]
+        is_page_is_to_remove = page_to_remove.get_name() not in self.pages
+        is_last_page_stack_is_navigation = self.last_navigation_page and destination.get_name() in self.pages
 
-        if page_to_remove.get_name() not in self.pages:
-            destination: Gtk.StackPage = self.stack.get_pages()[-2]
+        if is_page_is_to_remove and is_last_page_stack_is_navigation:
+            self.stack.set_visible_child_name(self.last_navigation_page)
+        else:
             self.stack.set_visible_child(child=destination.get_child())
-            self.stack.remove(page_to_remove.get_child())
+        self.stack.remove(page_to_remove.get_child())
 
     def update(self, *args, **kwargs):
         if not self.user_store.is_login:

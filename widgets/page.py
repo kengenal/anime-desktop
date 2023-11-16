@@ -12,9 +12,6 @@ class Page(Gtk.Box):
         self.user_store = user_store
         self.stack.connect("notify::visible-child", self._connect_on_load)
 
-    def change_direction(self, *args, **kwargs):
-        pass
-
     def _connect_on_load(self, *args, **kwargs):
         if self.stack.get_visible_child_name() == self.Meta.name:
             self.on_load()

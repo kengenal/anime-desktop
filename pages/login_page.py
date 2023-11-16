@@ -1,6 +1,9 @@
+import gi
+
+gi.require_version('Gtk', '4.0')
+
 from gi.repository import Gtk
 
-from store.user_store import UserStore
 from widgets.page import Page
 
 
