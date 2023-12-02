@@ -110,6 +110,10 @@ class Datum:
     themes: Optional[List[Demographic]] = None
     demographics: Optional[List[Demographic]] = None
 
+    @staticmethod
+    def from_payload(payload: Dict):
+        return from_dict(data_class=Datum, data=payload)
+
 
 @dataclass
 class Items:
