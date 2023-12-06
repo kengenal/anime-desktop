@@ -5,7 +5,7 @@ from gi.repository import Gtk, GLib
 from pages.detail_page import DetailPage
 from widgets.card_widget_search import CardSearchWidget
 
-gi.require_version('Gtk', '4.0')
+
 from services.jikan_service import JikanService
 from widgets.page import Page
 
@@ -16,18 +16,21 @@ class SearchPage(Page):
         self.set_orientation(orientation=Gtk.Orientation.VERTICAL)
         self.has_next_page = True
         self.is_loading = False
-        self.page = None
+        self.page = 1
+        self.query = ""
         self.jikan_service = JikanService()
         self.search = Gtk.SearchEntry()
-        self.flow_box = Gtk.FlowBox()
-        self.flow_box.set_column_spacing(20)
+        self.search.connect("search-changed", self.on_search)
+        self.flow_box = Gtk.FlowBox(column_spacing=20, max_children_per_line=50)
 
-        self.flow_box.set_max_children_per_line(50)
+        self.scroll_window = Gtk.ScrolledWindow(
+            hexpand=True,
+            vexpand=True,
+        )
+        self.scroll_window.set_policy(
+            Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
+        )
 
-        self.scroll_window = Gtk.ScrolledWindow()
-        self.scroll_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        self.scroll_window.set_hexpand(True)
-        self.scroll_window.set_vexpand(True)
         self.scroll_window.set_child(self.flow_box)
 
         self.scroll_window.connect("edge-reached", self.scroll_position)
@@ -51,10 +54,10 @@ class SearchPage(Page):
     def gat_data(self):
         self.is_loading = True
         self.loader_activate()
-        data = self.jikan_service.fetch_data(page=self.page)
+        data = self.jikan_service.fetch_data(page=self.page, query=self.query)
         if data:
             self.has_next_page = data.pagination.has_next_page
-            self.page = data.pagination.has_next_page
+            self.page = data.pagination.current_page
 
             for anime in data.data:
                 button = Gtk.Button()
@@ -67,8 +70,14 @@ class SearchPage(Page):
         self.loader_deactivate()
         self.is_loading = False
 
-    def scroll_position(self, scroll_window: Gtk.ScrolledWindow, position: Gtk.PositionType):
-        if position == Gtk.PositionType.BOTTOM and self.has_next_page and not self.is_loading:
+    def scroll_position(
+        self, scroll_window: Gtk.ScrolledWindow, position: Gtk.PositionType
+    ):
+        if (
+            position == Gtk.PositionType.BOTTOM
+            and self.has_next_page
+            and not self.is_loading
+        ):
             self.page += 1
             GLib.idle_add(self.gat_data)
 
@@ -89,6 +98,12 @@ class SearchPage(Page):
     def loader_deactivate(self):
         self.loader.set_spinning(False)
         self.loader.set_visible(False)
+
+    def on_search(self, text: Gtk.SearchEntry):
+        if len(text.get_text()) % 3 == 0:
+            self.flow_box.remove_all()
+            self.query = text.get_text()
+            GLib.idle_add(self.gat_data)
 
     class Meta:
         name = "search"

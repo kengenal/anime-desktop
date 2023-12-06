@@ -1,5 +1,6 @@
-from urllib.parse import urljoin
 import requests
+
+from urllib.parse import urljoin
 
 
 class JikanClinet(requests.Session):
@@ -11,6 +12,9 @@ class JikanClinet(requests.Session):
         return super().request(
             method=method,
             url=urljoin(
-                self.base_url, url,
-            ), *args, **kwargs
+                self.base_url,
+                url,
+            ),
+            *args,
+            **kwargs
         )
