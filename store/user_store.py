@@ -2,7 +2,8 @@ from gi.repository import GObject
 
 
 class UserStore(GObject.Object):
-    __gsignals__ = {"value-changed": (GObject.SignalFlags.RUN_FIRST, None, (str, bool))}
+    __gsignals__ = {
+        "value-changed": (GObject.SignalFlags.RUN_FIRST, None, (str, bool))}
 
     def __init__(self):
         super().__init__()

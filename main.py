@@ -3,27 +3,32 @@ from typing import List
 
 import gi
 
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+
 from pages.login_page import LoginPage
 from pages.search_page import SearchPage
 from pages.settings_page import SettingsPage
 from pages.watching_page import WatchingPage
 from store.user_store import UserStore
 
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw
+
+from gi.repository import Gtk, Adw, Gio, Gdk
 
 
 class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user_store = UserStore()
+        self.application: Gtk.Application = kwargs.get("application")
         self.authorized_pages = [WatchingPage.Meta.name, SettingsPage.Meta.name]
         self.last_navigation_page = None
         self.unauthorized_pages = [LoginPage.Meta.name]
-        self.pages = [SearchPage.Meta.name] + self.unauthorized_pages + self.authorized_pages
+        self.pages = (
+            [SearchPage.Meta.name] + self.unauthorized_pages + self.authorized_pages
+        )
         self.set_title(title="Anime App")
-
+        
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         self.set_child(child=vbox)
 
@@ -40,10 +45,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.flap.set_content(content=self.stack)
 
         self.register_side_bar_page(SearchPage)
-        self.register_side_bar_page(LoginPage)
+        # self.register_side_bar_page(LoginPage)
 
         stack_sidebar = Gtk.StackSidebar()
+
         stack_sidebar.set_stack(stack=self.stack)
+        self._load_css()
         self.flap.set_flap(flap=stack_sidebar)
         self.user_store.connect("value-changed", self.update)
 
@@ -61,7 +68,9 @@ class MainWindow(Gtk.ApplicationWindow):
         page_to_remove = self.stack.get_pages()[-1]
         destination: Gtk.StackPage = self.stack.get_pages()[-2]
         is_page_is_to_remove = page_to_remove.get_name() not in self.pages
-        is_last_page_stack_is_navigation = self.last_navigation_page and destination.get_name() in self.pages
+        is_last_page_stack_is_navigation = (
+            self.last_navigation_page and destination.get_name() in self.pages
+        )
 
         if is_page_is_to_remove and is_last_page_stack_is_navigation:
             self.stack.set_visible_child_name(self.last_navigation_page)
@@ -89,15 +98,20 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def register_side_bar_page(self, page):
         page_object = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.stack.add_titled(child=page_object, name=page.Meta.name, title=page.Meta.name.capitalize())
+        pg = self.stack.add_named(child=page_object, name=page.Meta.name)
+
+        pg.set_title(page.Meta.name.capitalize())
+        pg.set_icon_name("go-previous-symbolic")
         page_object.append(child=page(**self._inject()))
 
     def _generate_header_bar(self):
         self.hide_side_bar_button = Gtk.ToggleButton()
-        self.hide_side_bar_button.set_icon_name(icon_name='sidebar-show-right-rtl-symbolic')
-        self.hide_side_bar_button.connect('clicked', self.on_flap_button_toggled)
+        self.hide_side_bar_button.set_icon_name(
+            icon_name="view-dual-symbolic"
+        )
+        self.hide_side_bar_button.connect("clicked", self.on_flap_button_toggled)
 
-        self.back_button = Gtk.Button(label="<")
+        self.back_button = Gtk.Button.new_from_icon_name("go-previous-symbolic")
         self.back_button.connect("clicked", self.go_back)
         self.back_button.set_visible(True)
 
@@ -110,14 +124,20 @@ class MainWindow(Gtk.ApplicationWindow):
         return {
             "stack": self.stack,
             "user_store": self.user_store,
-            "header_bar": self.header_bar
+            "header_bar": self.header_bar,
+            "application": self.application,
         }
+
+    def _load_css(self):
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_file(Gio.File.new_for_path('styles/card.css'))
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 
 class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.connect('activate', self.on_activate)
+        self.connect("activate", self.on_activate)
         self.win = None
 
     def on_activate(self, app: Adw.Application):
@@ -125,6 +145,10 @@ class MyApp(Adw.Application):
         self.win.set_default_size(1070, 720)
         self.win.present()
 
+def main():
+    app = MyApp(application_id="com.example.GtkApplication")
+    app.run(sys.argv)
 
-app = MyApp(application_id="com.example.GtkApplication")
-app.run(sys.argv)
+
+if __name__ == "__main__":
+    main()

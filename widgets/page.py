@@ -3,10 +3,17 @@ from gi.repository import Gtk
 from store.user_store import UserStore
 
 
-class Page(Gtk.Box):
-
-    def __init__(self, stack: Gtk.Stack, header_bar: Gtk.HeaderBar, user_store: UserStore, *args, **kwargs):
+class Page(Gtk.Stack):
+    def __init__(
+        self,
+        stack: Gtk.Stack,
+        header_bar: Gtk.HeaderBar,
+        user_store: UserStore,
+        *args,
+        **kwargs
+    ):
         super().__init__()
+
         self.stack = stack
         self.header_bar = header_bar
         self.user_store = user_store

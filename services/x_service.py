@@ -9,14 +9,13 @@ class XService:
         self.is_completed = False
     
     def fetch_eposodes(self, mal_id: int) -> Generator:
-        while True:
-            if self.is_completed:
-                break
+        is_completed = False
+        while is_completed is False:
             data = self.client.get(f"/player/{str(mal_id)}")
             if data.status_code != 200:
                 return None
             data =  Episode.from_payload(data.json())
-            self.is_completed = data.is_completed
+            is_completed = data.is_completed
             yield data.episodes
 
 

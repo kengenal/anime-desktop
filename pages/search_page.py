@@ -13,20 +13,30 @@ from widgets.page import Page
 class SearchPage(Page):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.set_orientation(orientation=Gtk.Orientation.VERTICAL)
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.has_next_page = True
         self.is_loading = False
         self.page = 1
         self.query = ""
+
         self.jikan_service = JikanService()
         self.search = Gtk.SearchEntry()
         self.search.connect("search-changed", self.on_search)
-        self.flow_box = Gtk.FlowBox(column_spacing=20, max_children_per_line=50)
-
+        self.flow_box = Gtk.FlowBox(
+            column_spacing=20, 
+            row_spacing=20, 
+            max_children_per_line=50,
+            margin_end=20,
+            margin_start=20,
+            margin_top=20,
+            margin_bottom=20
+        )
+  
         self.scroll_window = Gtk.ScrolledWindow(
             hexpand=True,
             vexpand=True,
         )
+
         self.scroll_window.set_policy(
             Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
         )
@@ -38,8 +48,10 @@ class SearchPage(Page):
 
         self.loader.set_size_request(20, 20)
 
-        self.append(self.scroll_window)
-        self.append(self.loader)
+        self.box.append(self.scroll_window)
+        self.box.append(self.loader)
+    
+        self.add_child(child=self.box)
 
         self.on_load()
 
@@ -60,11 +72,11 @@ class SearchPage(Page):
             self.page = data.pagination.current_page
 
             for anime in data.data:
-                button = Gtk.Button()
+                button = Gtk.Button(css_classes=["card-button"])
 
                 button.set_child(CardSearchWidget(anime=anime))
                 button.connect("clicked", self.go_to_detail, anime.mal_id)
-                button.set_size_request(100, 100)
+                button.set_size_request(300, 300)
                 self.flow_box.append(button)
 
         self.loader_deactivate()
@@ -92,7 +104,7 @@ class SearchPage(Page):
             stack=self.stack,
             header_bar=self.header_bar,
         )
-        self.stack.add_named(child=destination)
+        self.stack.add_named(child=destination, name=DetailPage.Meta.name)
         self.stack.set_visible_child(destination)
 
     def loader_deactivate(self):
