@@ -1,14 +1,18 @@
+
 from typing import List
-import gi
+
 from models.episodes_model import EpisodeElement
 
 from gi.repository import Gtk
+from widgets.page import Page
 
 
 class EpisodesListWidget(Gtk.Box):
-    def __init__(self) -> None:
+    def __init__(self, go_to , *args, **kwargs) -> None:
         super().__init__(
             orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.go_to = go_to
+ 
         self.scroll_view = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
 
         self.append(self.scroll_view)
@@ -41,5 +45,13 @@ class EpisodesListWidget(Gtk.Box):
                 height_request=300,
                 width_request=300
             )
-
+            button.connect("clicked", self.go_to, episode.episode)
             self.flow_box.append(child=button)
+
+    def _go_to_episode(self, _: Gtk.Button, episode_number: int):
+        destination = self.page(
+            episode_number=episode_number,
+            **self.to_inject
+        )
+        self.stack.add_named(child=destination, name=self.page.Meta.name)
+        self.stack.set_visible_child(destination)

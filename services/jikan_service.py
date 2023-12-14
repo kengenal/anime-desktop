@@ -12,7 +12,7 @@ class JikanService:
     def fetch_data(
         self, page: int = 1, query: Optional[str] = None
     ) -> Jikan:
-        params = {"page": page, "q": query}
+        params = {"page": page, "q": "spy x family"}
         response = self.client.get(url="anime", params=params)
         return Jikan.from_payload(response.json())
 

@@ -1,7 +1,6 @@
-import gi
 import threading
 from gi.repository import Gtk
-from models.episodes_model import EpisodeElement
+from pages.episode_page import EpisodePage
 
 from services.jikan_service import JikanService
 from services.x_service import XService
@@ -29,7 +28,7 @@ class DetailPage(Page):
         self.episode_store = EpisodeSotre()
         self.episode_store.connect("value-changed", self.set_episodes)
         
-        self.episode_widget = EpisodesListWidget()
+        self.episode_widget = EpisodesListWidget(go_to=self.go_to)
         button = Gtk.Button(label="Fetch data")
         self.episode_widget.append(button)
         button.connect("clicked", self.load_pisodes)
@@ -47,6 +46,9 @@ class DetailPage(Page):
 
     def on_destroy(self):
         self.header_bar.remove(child=self.stack_switcher)
+        
+    def on_load(self):
+        self.header_bar.set_title_widget(self.stack_switcher)
 
     def load_anime(self):
         data = self.jikan_service.get_by_id(self.mal_id)
@@ -64,6 +66,16 @@ class DetailPage(Page):
                 return
             self.episode_store.episodes = episodes
 
+    def go_to(self, _: Gtk.Button, episode_number: int):
+        destination = EpisodePage(
+            episode_number=episode_number,
+            episode_store= self.episode_store,
+            stack=self.stack,
+            user_store=self.user_store,
+            header_bar=self.header_bar
+        )
+        self.stack.add_named(child=destination, name=EpisodePage.Meta.name)
+        self.stack.set_visible_child(destination)
 
     class Meta:
         name = "detail"
