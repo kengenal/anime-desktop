@@ -1,12 +1,9 @@
 import gi
-
-from gi.repository import Gtk, GLib
+from gi.repository import GLib, Gtk
 
 from pages.detail_page import DetailPage
-from widgets.card_widget_search import CardSearchWidget
-
-
 from services.jikan_service import JikanService
+from widgets.card_widget_search import CardSearchWidget
 from widgets.page import Page
 
 
@@ -23,15 +20,15 @@ class SearchPage(Page):
         self.search = Gtk.SearchEntry()
         self.search.connect("search-changed", self.on_search)
         self.flow_box = Gtk.FlowBox(
-            column_spacing=20, 
-            row_spacing=20, 
+            column_spacing=20,
+            row_spacing=20,
             max_children_per_line=50,
             margin_end=20,
             margin_start=20,
             margin_top=20,
-            margin_bottom=20
+            margin_bottom=20,
         )
-  
+
         self.scroll_window = Gtk.ScrolledWindow(
             hexpand=True,
             vexpand=True,
@@ -50,7 +47,7 @@ class SearchPage(Page):
 
         self.box.append(self.scroll_window)
         self.box.append(self.loader)
-    
+
         self.add_child(child=self.box)
 
         self.on_load()
@@ -103,6 +100,8 @@ class SearchPage(Page):
             user_store=self.user_store,
             stack=self.stack,
             header_bar=self.header_bar,
+            db=self.db,
+            database_connection=self.database_connection,
         )
         self.stack.add_named(child=destination, name=DetailPage.Meta.name)
         self.stack.set_visible_child(destination)

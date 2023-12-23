@@ -1,4 +1,3 @@
-
 from typing import List
 
 from models.episodes_model import EpisodeElement
@@ -8,11 +7,10 @@ from widgets.page import Page
 
 
 class EpisodesListWidget(Gtk.Box):
-    def __init__(self, go_to , *args, **kwargs) -> None:
-        super().__init__(
-            orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+    def __init__(self, go_to, *args, **kwargs) -> None:
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
         self.go_to = go_to
- 
+
         self.scroll_view = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
 
         self.append(self.scroll_view)
@@ -25,7 +23,6 @@ class EpisodesListWidget(Gtk.Box):
             margin_start=20,
             margin_top=20,
             margin_bottom=20,
-
         )
         self.flow_box.set_column_spacing(20)
 
@@ -43,15 +40,12 @@ class EpisodesListWidget(Gtk.Box):
                 label=str(episode.episode),
                 css_classes=["card-button", "ctitle"],
                 height_request=300,
-                width_request=300
+                width_request=300,
             )
             button.connect("clicked", self.go_to, episode.episode)
             self.flow_box.append(child=button)
 
     def _go_to_episode(self, _: Gtk.Button, episode_number: int):
-        destination = self.page(
-            episode_number=episode_number,
-            **self.to_inject
-        )
+        destination = self.page(episode_number=episode_number, **self.to_inject)
         self.stack.add_named(child=destination, name=self.page.Meta.name)
         self.stack.set_visible_child(destination)

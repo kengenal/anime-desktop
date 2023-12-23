@@ -1,14 +1,18 @@
-from typing import Dict, List
+from typing import List
+
 from gi.repository import GObject
 
-from models.episodes_model import EpisodeElement
+from models.episodes_model import EpisodeElement, Player
 
 
 class EpisodeSotre(GObject.Object):
-    __gsignals__ = {"value-changed": (GObject.SignalFlags.RUN_FIRST, None, (str, bool))}
+    __gsignals__ = {
+        "value-changed": (GObject.SignalFlags.RUN_FIRST, None, (str, bool)),
+    }
 
-    def __init__(self) -> None:
+    def __init__(self, mal_id: int) -> None:
         super().__init__()
+        self.mal_id = mal_id
         self._episodes = []
 
     @property

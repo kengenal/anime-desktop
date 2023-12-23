@@ -1,3 +1,6 @@
+# isort: skip_file
+# fmt: off
+import sqlite3
 import sys
 from typing import List
 
@@ -6,29 +9,32 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
+from gi.repository import Adw, Gio, Gtk
+
 from pages.login_page import LoginPage
 from pages.search_page import SearchPage
 from pages.settings_page import SettingsPage
 from pages.watching_page import WatchingPage
 from store.user_store import UserStore
-
-
-from gi.repository import Gtk, Adw, Gio, Gdk
+# fmt: on
 
 
 class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user_store = UserStore()
+
         self.application: Gtk.Application = kwargs.get("application")
         self.authorized_pages = [WatchingPage.Meta.name, SettingsPage.Meta.name]
         self.last_navigation_page = None
         self.unauthorized_pages = [LoginPage.Meta.name]
         self.pages = (
-            [SearchPage.Meta.name] + self.unauthorized_pages + self.authorized_pages
+            [SearchPage.Meta.name]
+            + self.unauthorized_pages
+            + self.authorized_pages
         )
         self.set_title(title="Anime App")
-        
+
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         self.set_child(child=vbox)
 
@@ -106,10 +112,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _generate_header_bar(self):
         self.hide_side_bar_button = Gtk.ToggleButton()
-        self.hide_side_bar_button.set_icon_name(
-            icon_name="view-dual-symbolic"
+        self.hide_side_bar_button.set_icon_name(icon_name="view-dual-symbolic")
+        self.hide_side_bar_button.connect(
+            "clicked", self.on_flap_button_toggled
         )
-        self.hide_side_bar_button.connect("clicked", self.on_flap_button_toggled)
 
         self.back_button = Gtk.Button.new_from_icon_name("go-previous-symbolic")
         self.back_button.connect("clicked", self.go_back)
@@ -126,17 +132,28 @@ class MainWindow(Gtk.ApplicationWindow):
             "user_store": self.user_store,
             "header_bar": self.header_bar,
             "application": self.application,
+            "db": self.application.cursor,
+            "database_connection": self.application.database_connection,
         }
 
     def _load_css(self):
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_file(Gio.File.new_for_path('styles/card.css'))
-        Gtk.StyleContext.add_provider_for_display(self.get_display(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        css_provider.load_from_file(Gio.File.new_for_path("styles/card.css"))
+        Gtk.StyleContext.add_provider_for_display(
+            self.get_display(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
 
 
 class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.database_connection = sqlite3.connect(
+            "app.db", check_same_thread=False
+        )
+        self.cursor = self.database_connection.cursor()
         self.connect("activate", self.on_activate)
         self.win = None
 
@@ -144,6 +161,7 @@ class MyApp(Adw.Application):
         self.win = MainWindow(application=app)
         self.win.set_default_size(1070, 720)
         self.win.present()
+
 
 def main():
     app = MyApp(application_id="com.example.GtkApplication")

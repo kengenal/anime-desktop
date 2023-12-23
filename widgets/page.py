@@ -1,3 +1,5 @@
+from sqlite3 import Connection, Cursor
+
 from gi.repository import Gtk
 
 from store.user_store import UserStore
@@ -7,13 +9,16 @@ class Page(Gtk.Stack):
     def __init__(
         self,
         stack: Gtk.Stack,
+        db: Cursor,
+        database_connection: Connection,
         header_bar: Gtk.HeaderBar,
         user_store: UserStore,
         *args,
         **kwargs
     ):
         super().__init__()
-
+        self.db = db
+        self.database_connection = database_connection
         self.stack = stack
         self.header_bar = header_bar
         self.user_store = user_store

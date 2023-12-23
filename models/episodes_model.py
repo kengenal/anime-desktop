@@ -1,6 +1,6 @@
-from enum import Enum
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import Dict, List
+
 from dacite import from_dict
 
 

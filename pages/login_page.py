@@ -1,4 +1,3 @@
-
 from collections.abc import Callable, Iterable, Mapping
 from functools import partial
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -13,21 +12,20 @@ from gi.repository import Gtk, Gio, Adw, GLib, GObject
 
 from widgets.page import Page
 
+
 class Listener(GObject.Object):
     __gsignals__ = {
         "delivered-data": (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
-
     }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._query_params = None
 
-
     @property
     def query_params(self):
         return self._query_params
-    
+
     @query_params.setter
     def query_params(self, new_value):
         if new_value != self._query_params:
@@ -36,10 +34,9 @@ class Listener(GObject.Object):
 
 
 class Handler(BaseHTTPRequestHandler):
-    def __init__(self,listener: Listener,*args, **kwargs):
+    def __init__(self, listener: Listener, *args, **kwargs):
         self.listener = listener
         super().__init__(*args, **kwargs)
-    
 
     def do_GET(self):
         if "favicon" not in self.path:
@@ -48,18 +45,18 @@ class Handler(BaseHTTPRequestHandler):
             self.listener.query_params = parse_query
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b'Hello, world!')
+        self.wfile.write(b"Hello, world!")
 
 
 class LoginPage(Page):
-    def __init__(self, application: Adw.Application,*args, **kwargs):
+    def __init__(self, application: Adw.Application, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.action = Gio.SimpleAction(name="open_url")
         self.listener = Listener()
         self.listener.connect("delivered-data", self.end_login_process)
         handler = partial(Handler, self.listener)
-        self.httpd = HTTPServer(('localhost', 8080), handler)
-   
+        self.httpd = HTTPServer(("localhost", 8080), handler)
+
         button = Gtk.Button(label="login")
         button.connect("clicked", self.login)
         button.set_halign(align=Gtk.Align.CENTER)
@@ -83,11 +80,10 @@ class LoginPage(Page):
 
     def do_start_login(self):
         self.httpd.serve_forever()
-        
 
     def stop_server(self, *args, **kwargs):
         self.httpd.shutdown()
- 
+
     def end_login_process(self, *args, **kwargs):
         print(args, kwargs)
 

@@ -13,11 +13,11 @@ class DetalHeader(Gtk.Box):
         super().__init__()
         self.scroll_view = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
         vbox = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, 
-            margin_end=20, 
-            margin_start=20, 
-            margin_bottom=20, 
-            margin_top=20
+            orientation=Gtk.Orientation.VERTICAL,
+            margin_end=20,
+            margin_start=20,
+            margin_bottom=20,
+            margin_top=20,
         )
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         main_info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -30,7 +30,7 @@ class DetalHeader(Gtk.Box):
             selectable=True,
             css_classes=["ctitle"],
             width_request=100,
-            height_request=100
+            height_request=100,
         )
         description = Gtk.Label(
             selectable=True,
@@ -42,11 +42,9 @@ class DetalHeader(Gtk.Box):
 
         if anime.images and anime.images.jpg and anime.images.jpg.large_image_url:
             image = AsyncImage(
-                anime.images.jpg.large_image_url,
-                width_request=300,
-                height_request=300
+                anime.images.jpg.large_image_url, width_request=300, height_request=300
             )
-         
+
             header_box.append(image)
         main_info.append(title)
         main_info.append(description)
