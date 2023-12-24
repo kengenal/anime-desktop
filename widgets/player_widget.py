@@ -6,6 +6,7 @@ from models.episodes_model import Player
 class PlayerWidget(Gtk.Box):
     def __init__(self, url: str, *args, **kwargs):
         self.url = url
+        print(url)
         super().__init__(*args, **kwargs)
         GLib.idle_add(self.load)
 
@@ -21,4 +22,4 @@ class PlayerWidget(Gtk.Box):
         )
         self.player.set_file(file=file)
 
-        self.append(child=self.player)
+        # self.append(child=self.player)

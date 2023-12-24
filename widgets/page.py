@@ -22,12 +22,15 @@ class Page(Gtk.Stack):
         self.stack = stack
         self.header_bar = header_bar
         self.user_store = user_store
+        self.is_destory = False
         self.stack.connect("notify::visible-child", self._connect_on_load)
 
     def _connect_on_load(self, *args, **kwargs):
         if self.stack.get_visible_child_name() == self.Meta.name:
+            self.is_destory = False
             self.on_load()
-        else:
+        elif self.is_destory is False:
+            self.is_destory = True
             self.on_destroy()
 
     def on_load(self):
