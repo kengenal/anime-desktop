@@ -29,6 +29,7 @@ class DetailPage(Page):
             *args,
             **kwargs
         )
+        self.mal_id = mal_id
         self.database_connection = database_connection
         self.box = Gtk.Box()
         self.mal_id = mal_id
@@ -44,11 +45,12 @@ class DetailPage(Page):
         self.episode_store.connect("value-changed", self.set_episodes)
 
         self.episode_widget = EpisodesListWidget(go_to=self.go_to)
-        button = Gtk.Button(label="Fetch data")
-        self.episode_widget.append(button)
-        button.connect("clicked", self.load_pisodes)
+        self.watch_button = Gtk.Button(label="Watch")
+        self.watch_button.connect("clicked", self.load_episodes)
 
-        self.info_page = Gtk.Box()
+        self.spinner = Gtk.Spinner(vexpand=True, hexpand=True, spinning=True)
+        self.info_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.info_page.append(self.spinner)
 
         self.stack_for_switcher.add_titled(
             child=self.info_page, name="info", title="Info"
@@ -60,6 +62,7 @@ class DetailPage(Page):
         self.x_service = XService()
 
         threading.Thread(target=self.load_anime, daemon=True).start()
+        threading.Thread(target=self._check, daemon=True).start()
 
     def on_destroy(self):
         self.header_bar.remove(child=self.stack_switcher)
@@ -68,20 +71,20 @@ class DetailPage(Page):
         self.header_bar.set_title_widget(self.stack_switcher)
 
     def load_anime(self):
+        self.spinner.set_visible(True)
         data = self.jikan_service.get_by_id(self.mal_id)
+
+        self.info_page.append(self.watch_button)
         self.info_page.append(child=DetalHeader(anime=data))
+        self.spinner.set_visible(False)
 
     def set_episodes(self, *args, **kwargs):
+        self.episode_widget.remove_label()
+        self.episode_widget.end_loading()
         self.episode_widget.set_episodes(self.episode_store.episodes)
 
-    def load_pisodes(self, *args, **kwargs):
+    def load_episodes(self, *args, **kwargs):
         threading.Thread(target=self._load_episodes, daemon=True).start()
-
-    def _load_episodes(self):
-        for episodes in self.x_service.fetch_eposodes(self.mal_id):
-            if episodes is None:
-                return
-            self.episode_store.episodes = episodes
 
     def go_to(self, _: Gtk.Button, episode_number: int):
         destination = EpisodePage(
@@ -95,6 +98,23 @@ class DetailPage(Page):
         )
         self.stack.add_named(child=destination, name=EpisodePage.Meta.name)
         self.stack.set_visible_child(destination)
+
+    def _check(self):
+        self.episode_widget.start_loading()
+        to_fetch = self.x_service.check(mal_id=self.mal_id)
+        if to_fetch is True:
+            self._load_episodes()
+        else:
+            self.episode_widget.end_loading()
+            self.episode_widget.set_label()
+
+    def _load_episodes(self):
+        self.watch_button.set_sensitive(False)
+        for episodes in self.x_service.fetch_eposodes(self.mal_id):
+            if episodes is None:
+                return
+            self.episode_store.episodes = episodes
+        self.watch_button.set_sensitive(True)
 
     class Meta:
         name = "detail"

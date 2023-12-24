@@ -1,5 +1,6 @@
-from typing import Generator
 import time
+from typing import Generator
+
 from models.episodes_model import Episode
 from utils.x_client import XClinet
 
@@ -18,3 +19,9 @@ class XService:
             data = Episode.from_payload(data.json())
             is_completed = data.is_completed
             yield data.episodes
+
+    def check(self, mal_id: int) -> bool:
+        request = self.client.get(f"player/{str(mal_id)}/check")
+        if request.status_code != 200:
+            return False
+        return request.json()["available"]

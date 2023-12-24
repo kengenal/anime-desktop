@@ -1,11 +1,7 @@
-import gi
+from gi.repository import Gtk
 
 from models.jikan_model import Datum
 from widgets.network_image import AsyncImage
-
-gi.require_version("Gtk", "4.0")
-
-from gi.repository import Gtk
 
 
 class DetalHeader(Gtk.Box):
@@ -40,9 +36,15 @@ class DetalHeader(Gtk.Box):
             justify=Gtk.Justification.CENTER,
         )
 
-        if anime.images and anime.images.jpg and anime.images.jpg.large_image_url:
+        if (
+            anime.images
+            and anime.images.jpg
+            and anime.images.jpg.large_image_url
+        ):
             image = AsyncImage(
-                anime.images.jpg.large_image_url, width_request=300, height_request=300
+                anime.images.jpg.large_image_url,
+                width_request=300,
+                height_request=300,
             )
 
             header_box.append(image)

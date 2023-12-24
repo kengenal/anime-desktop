@@ -22,4 +22,4 @@ class PlayerWidget(Gtk.Box):
         )
         self.player.set_file(file=file)
 
-        # self.append(child=self.player)
+        self.append(child=self.player)
