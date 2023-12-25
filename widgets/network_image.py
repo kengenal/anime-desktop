@@ -1,5 +1,6 @@
 import threading
 from sys import platform
+
 import requests
 from gi.repository import GdkPixbuf, Gio, GLib, Gtk
 
@@ -7,6 +8,7 @@ from gi.repository import GdkPixbuf, Gio, GLib, Gtk
 class AsyncImage(Gtk.Image):
     def __init__(self, url: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.url = url
         if platform == "darwin":
             threading.Thread(target=self.on_load, daemon=True).start()
         else:

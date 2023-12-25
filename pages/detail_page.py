@@ -7,7 +7,7 @@ from pages.episode_page import EpisodePage
 from services.jikan_service import JikanService
 from services.x_service import XService
 from store.episode_store import EpisodeSotre
-from widgets.detial_header import DetalHeader
+from widgets.detial_header import DetailHeader
 from widgets.episodes_list_widget import EpisodesListWidget
 from widgets.page import Page
 
@@ -45,12 +45,14 @@ class DetailPage(Page):
         self.episode_store.connect("value-changed", self.set_episodes)
 
         self.episode_widget = EpisodesListWidget(go_to=self.go_to)
+
+        self.detail_header = DetailHeader()
+        self.detail_header.strat_loading()
+
         self.watch_button = Gtk.Button(label="Watch")
         self.watch_button.connect("clicked", self.load_episodes)
 
-        self.spinner = Gtk.Spinner(vexpand=True, hexpand=True, spinning=True)
         self.info_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.info_page.append(self.spinner)
 
         self.stack_for_switcher.add_titled(
             child=self.info_page, name="info", title="Info"
@@ -60,6 +62,9 @@ class DetailPage(Page):
         )
         self.add_child(self.stack_for_switcher)
         self.x_service = XService()
+
+        self.info_page.append(child=self.watch_button)
+        self.info_page.append(child=self.detail_header)
 
         threading.Thread(target=self.load_anime, daemon=True).start()
         threading.Thread(target=self._check, daemon=True).start()
@@ -71,12 +76,10 @@ class DetailPage(Page):
         self.header_bar.set_title_widget(self.stack_switcher)
 
     def load_anime(self):
-        self.spinner.set_visible(True)
         data = self.jikan_service.get_by_id(self.mal_id)
+        self.detail_header.set_data(anime=data)
 
-        self.info_page.append(self.watch_button)
-        self.info_page.append(child=DetalHeader(anime=data))
-        self.spinner.set_visible(False)
+        self.detail_header.end_loading()
 
     def set_episodes(self, *args, **kwargs):
         self.episode_widget.remove_label()

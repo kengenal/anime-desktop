@@ -4,22 +4,26 @@ from models.jikan_model import Datum
 from widgets.network_image import AsyncImage
 
 
-class DetalHeader(Gtk.Box):
-    def __init__(self, anime: Datum) -> None:
+class DetailHeader(Gtk.Box):
+    def __init__(self) -> None:
         super().__init__()
         self.scroll_view = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
-        vbox = Gtk.Box(
+        self.spinner = Gtk.Spinner(vexpand=True, hexpand=True)
+        self.vbox = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             margin_end=20,
             margin_start=20,
             margin_bottom=20,
             margin_top=20,
         )
+
+        self.scroll_view.set_child(self.vbox)
+        self.append(self.spinner)
+
+    def set_data(self, anime: Datum) -> None:
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         main_info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        vbox.append(header_box)
 
-        self.scroll_view.set_child(vbox)
         title = Gtk.Label(
             label=anime.title,
             justify=Gtk.Justification.CENTER,
@@ -51,4 +55,13 @@ class DetalHeader(Gtk.Box):
         main_info.append(title)
         main_info.append(description)
         header_box.append(main_info)
+        self.vbox.append(header_box)
         self.append(self.scroll_view)
+
+    def strat_loading(self):
+        self.spinner.set_visible(True)
+        self.spinner.set_spinning(True)
+
+    def end_loading(self):
+        self.spinner.set_visible(False)
+        self.spinner.set_spinning(False)
