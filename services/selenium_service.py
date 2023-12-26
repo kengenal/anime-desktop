@@ -1,9 +1,11 @@
+import sys
 import threading
 from typing import Generator, Tuple
 
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.by import By
-from selenium.webdriver.edge.options import Options
+from selenium.webdriver.edge.options import Options as EdgeOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
@@ -14,22 +16,28 @@ from models.episodes_model import EpisodeElement, Player
 class SeleniumService:
     def __init__(self, episode_database: EpisodeDatabase) -> None:
         self.episode_database = episode_database
-        self.options = Options()
+        if sys.platform == "win32":
+            self.options = EdgeOptions()
+            self.options.add_experimental_option(
+                "prefs",
+                {
+                    "profile.managed_default_content_settings.images": 2,
+                },
+            )
+        else:
+            self.options = ChromeOptions()
         self.options.add_argument("--headless")
         self.options.add_argument("--no-sandbox")
-        self.options.add_experimental_option(
-            "prefs",
-            {
-                "profile.managed_default_content_settings.images": 2,
-            },
-        )
         self.driver = None
         self.wait = None
         self.event = threading.Event()
         threading.Thread(target=self.inital_driver, daemon=True).start()
 
     def inital_driver(self):
-        self.driver = webdriver.ChromiumEdge(options=self.options)
+        if sys.platform == "win32":
+            self.driver = webdriver.ChromiumEdge(options=self.options)
+        else:
+            self.driver = webdriver.Chrome(options=self.options)
         self.wait = WebDriverWait(self.driver, 4)
         self.event.set()
 
