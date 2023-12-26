@@ -155,12 +155,16 @@ class MyApp(Adw.Application):
         )
         self.cursor = self.database_connection.cursor()
         self.connect("activate", self.on_activate)
+        self.connect("shutdown", self.on_shutdown)
         self.win = None
 
     def on_activate(self, app: Adw.Application):
         self.win = MainWindow(application=app)
         self.win.set_default_size(1070, 720)
         self.win.present()
+
+    def on_shutdown(self, *args, **kwargs):
+        self.database_connection.close()
 
 
 def main():
