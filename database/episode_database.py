@@ -1,5 +1,6 @@
 from sqlite3 import Connection, Cursor
 from typing import Tuple
+from webbrowser import get
 
 
 class EpisodeDatabase:
@@ -42,7 +43,17 @@ class EpisodeDatabase:
     def clear_cashe(self) -> None:
         query = self.db.execute(
             f"""
-            SELECT public_id FROM {self.table_name} WHERE datetime(timestamp, '+{self.cashe_lifetime} Hour') <= datetime('now') 
+                SELECT public_id FROM {self.table_name}
+                WHERE
+                datetime(timestamp, '+{self.cashe_lifetime} Hour') <= datetime('now')
             """
         )
-        get_ids = query.fetchall()
+        get_ids = [x[0] for x in query.fetchall()]
+        if get_ids:
+            self.db.execute(
+                f"""
+                    DELETE FROM {self.table_name} WHERE public_id IN (?)
+                    """,
+                (",".join(get_ids)),
+            )
+            self.conn.commit()

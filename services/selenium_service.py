@@ -45,6 +45,7 @@ class SeleniumService:
         self, episode: EpisodeElement, mal_id: int
     ) -> Generator[None, None, Tuple[int, Player]]:
         to_fetch = []
+        self.episode_database.clear_cashe()
         for player in episode.players[:3]:
             if res := self.episode_database.get_casched_episode(
                 self._create_id(
