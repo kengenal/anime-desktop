@@ -40,11 +40,15 @@ class EpisodePage(Page):
         self.selenium_service = SeleniumService(self.episode_database)
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
+        self.spinner = Gtk.Spinner(vexpand=True, hexpand=True)
+
         self.stack_for_swither = Gtk.Stack()
         self.stack_switcher = Gtk.StackSwitcher(stack=self.stack_for_swither)
 
+        self.box.append(self.spinner)
         self.box.append(self.stack_switcher)
         self.box.append(self.stack_for_swither)
+
         self.add_child(self.box)
         self._make_header_box()
         self._update_layaut()
@@ -73,11 +77,13 @@ class EpisodePage(Page):
         self.header_box.append(child=self.next_button)
 
     def get_sources(self):
+        self._enable_spinner()
         for episode, source in self.selenium_service.get_sources(
             self.episode, self.episode_store.mal_id
         ):
             if episode == self.episode_number:
                 child = PlayerWidget(url=source.url)
+                self._disable_spinner()
                 self.episode_source_childs.append(child)
                 self.stack_for_swither.add_titled(
                     child=child,
@@ -93,6 +99,14 @@ class EpisodePage(Page):
     def next_episode(self, button: Gtk.Button):
         self.episode_number += 1
         self._update_layaut()
+
+    def _enable_spinner(self):
+        self.spinner.set_visible(True)
+        self.spinner.set_spinning(True)
+
+    def _disable_spinner(self):
+        self.spinner.set_visible(False)
+        self.spinner.set_spinning(False)
 
     def _update_layaut(self) -> None:
         self.episode = self._get_current_episode()
