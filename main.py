@@ -51,7 +51,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.flap.set_content(content=self.stack)
 
         self.register_side_bar_page(SearchPage)
-        # self.register_side_bar_page(LoginPage)
+        self.register_side_bar_page(LoginPage)
 
         stack_sidebar = Gtk.StackSidebar()
 
@@ -104,10 +104,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def register_side_bar_page(self, page):
         page_object = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        pg = self.stack.add_named(child=page_object, name=page.Meta.name)
+        page_stack_object = self.stack.add_named(
+            child=page_object, name=page.Meta.name
+        )
 
-        pg.set_title(page.Meta.name.capitalize())
-        pg.set_icon_name("go-previous-symbolic")
+        page_stack_object.set_title(page.Meta.name.capitalize())
+        page_stack_object.set_icon_name("go-previous-symbolic")
         page_object.append(child=page(**self._inject()))
 
     def _generate_header_bar(self):

@@ -1,16 +1,18 @@
+import threading
 from collections.abc import Callable, Iterable, Mapping
 from functools import partial
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from posix import write
 from socketserver import TCPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
+
 import gi
-import threading
+from gi.repository import Adw, Gio, GLib, GObject, Gtk
+
+from services.mal_oath_service import MalOath2Service
+from widgets.page import Page
 
 gi.require_version("Gtk", "4.0")
-
-from gi.repository import Gtk, Gio, Adw, GLib, GObject
-
-from widgets.page import Page
 
 
 class Listener(GObject.Object):
@@ -51,31 +53,38 @@ class Handler(BaseHTTPRequestHandler):
 class LoginPage(Page):
     def __init__(self, application: Adw.Application, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.box = Gtk.Box()
+        self.mal_services = MalOath2Service()
         self.action = Gio.SimpleAction(name="open_url")
         self.listener = Listener()
         self.listener.connect("delivered-data", self.end_login_process)
         handler = partial(Handler, self.listener)
-        self.httpd = HTTPServer(("localhost", 8080), handler)
+        self.httpd = HTTPServer(("localhost", 3000), handler)
 
-        button = Gtk.Button(label="login")
-        button.connect("clicked", self.login)
-        button.set_halign(align=Gtk.Align.CENTER)
-        button.set_valign(align=Gtk.Align.CENTER)
-        button.set_hexpand(expand=True)
+        self.button = Gtk.Button(
+            vexpand=True,
+            hexpand=True,
+            halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.CENTER,
+        )
 
-        button2 = Gtk.Button(label="Stop")
-        button2.connect("clicked", self.stop_server)
-        button2.set_halign(align=Gtk.Align.CENTER)
-        button2.set_valign(align=Gtk.Align.CENTER)
-        button2.set_hexpand(expand=True)
+        self.spinner = Gtk.Spinner(visible=False)
+        self.box_label = Gtk.Label(label="Login via MAL")
+        self.button_box = Gtk.Box()
+        self.button.connect("clicked", self.start_login)
 
+        self.box.append(self.button)
+        self.button_box.append(self.box_label)
+        self.button_box.append(self.spinner)
+
+        self.button.set_child(self.button_box)
+        self.add_child(self.box)
         self.th = threading.Thread(target=self.do_start_login)
         self.th.daemon = True
-        button.set_vexpand(expand=True)
-        self.append(button)
-        self.append(button2)
 
-    def login(self, *args, **kwargs):
+    def start_login(self, *args, **kwargs):
+        self.disable_button()
+        self.mal_services.authorize()
         self.th.start()
 
     def do_start_login(self):
@@ -85,7 +94,27 @@ class LoginPage(Page):
         self.httpd.shutdown()
 
     def end_login_process(self, *args, **kwargs):
-        print(args, kwargs)
+        print(self.listener.query_params)
+        try:
+            access_token, refresh_token = self.mal_services.fetch_token(
+                code=self.listener.query_params.get("code")
+            )
+        except Exception as err:
+            print(err)
+        self.enable_button()
+        self.stop_server()
+
+    def disable_button(self):
+        self.button.set_sensitive(False)
+        self.spinner.set_visible(True)
+        self.spinner.set_spinning(True)
+        self.box_label.set_visible(False)
+
+    def enable_button(self):
+        self.button.set_sensitive(True)
+        self.spinner.set_visible(False)
+        self.spinner.set_spinning(False)
+        self.box_label.set_visible(True)
 
     class Meta:
         name = "login"
