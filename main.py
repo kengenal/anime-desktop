@@ -13,6 +13,7 @@ from gi.repository import Adw, Gio, Gtk
 
 from pages.login_page import LoginPage
 from pages.search_page import SearchPage
+from utils.secure_store import SecureStore
 from pages.settings_page import SettingsPage
 from pages.watching_page import WatchingPage
 from store.user_store import UserStore
@@ -59,6 +60,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self._load_css()
         self.flap.set_flap(flap=stack_sidebar)
         self.user_store.connect("value-changed", self.update)
+
+        self._is_user_login()
 
     def on_flap_button_toggled(self, *args, **kwargs):
         self.flap.set_reveal_flap(not self.flap.get_reveal_flap())
@@ -146,6 +149,11 @@ class MainWindow(Gtk.ApplicationWindow):
             css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
+
+    def _is_user_login(self):
+        secure_store = SecureStore()
+        if secure_store.exists("token"):
+            self.user_store.is_login = True
 
 
 class MyApp(Adw.Application):

@@ -1,23 +1,21 @@
 import threading
-from collections.abc import Callable, Iterable, Mapping
+from enum import property
 from functools import partial
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from posix import write
-from socketserver import TCPServer
 from urllib.parse import parse_qs, urlparse
 
-import gi
-from gi.repository import Adw, Gio, GLib, GObject, Gtk
+from gi.repository import GObject, Gtk
 
+from exceptions.mal_exceptions import MalLoginException
 from services.mal_oath_service import MalOath2Service
+from store.user_store import UserStore
+from utils.secure_store import SecureStore
 from widgets.page import Page
-
-gi.require_version("Gtk", "4.0")
 
 
 class Listener(GObject.Object):
     __gsignals__ = {
-        "delivered-data": (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
+        "delivered-data": (GObject.SignalFlags.RUN_FIRST, None, (str, bool)),
     }
 
     def __init__(self, *args, **kwargs):
@@ -51,11 +49,12 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class LoginPage(Page):
-    def __init__(self, application: Adw.Application, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, user_store: UserStore, *args, **kwargs):
+        super().__init__(user_store=user_store, *args, **kwargs)
+        self.secure_store = SecureStore()
+        self.user_store = user_store
         self.box = Gtk.Box()
         self.mal_services = MalOath2Service()
-        self.action = Gio.SimpleAction(name="open_url")
         self.listener = Listener()
         self.listener.connect("delivered-data", self.end_login_process)
         handler = partial(Handler, self.listener)
@@ -79,27 +78,29 @@ class LoginPage(Page):
 
         self.button.set_child(self.button_box)
         self.add_child(self.box)
-        self.th = threading.Thread(target=self.do_start_login)
-        self.th.daemon = True
+        self.thred_worker = threading.Thread(target=self.do_start_login)
+        self.thred_worker.daemon = True
 
-    def start_login(self, *args, **kwargs):
+    def start_login(self, _: Gtk.Button):
         self.disable_button()
         self.mal_services.authorize()
-        self.th.start()
+        self.thred_worker.start()
 
     def do_start_login(self):
         self.httpd.serve_forever()
 
-    def stop_server(self, *args, **kwargs):
+    def stop_server(self):
         self.httpd.shutdown()
 
     def end_login_process(self, *args, **kwargs):
-        print(self.listener.query_params)
         try:
             access_token, refresh_token = self.mal_services.fetch_token(
                 code=self.listener.query_params.get("code")
             )
-        except Exception as err:
+            self.secure_store.set("token", access_token)
+            self.secure_store.set("refresh_token", refresh_token)
+            self.user_store.is_login = True
+        except MalLoginException as err:
             print(err)
         self.enable_button()
         self.stop_server()
