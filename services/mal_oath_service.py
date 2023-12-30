@@ -1,6 +1,4 @@
 import os
-import random
-import string
 from typing import Tuple
 from urllib.parse import urlencode
 from webbrowser import open
@@ -9,6 +7,7 @@ import requests
 from dotenv import load_dotenv
 
 from exceptions.mal_exceptions import MalLoginException
+from utils.pkce import PKCE
 
 
 class MalOath2Service:
@@ -18,7 +17,7 @@ class MalOath2Service:
         (
             self.code_verifier,
             self.code_verifier_length,
-        ) = self.generate_code_verifier()
+        ) = PKCE.code_verifier()
         load_dotenv()
         self.callback_url = "http://localhost:3000"
         self.client_id = os.getenv("client_id")
@@ -55,11 +54,3 @@ class MalOath2Service:
         if request.status_code != 200:
             raise MalLoginException()
         return request.json()["access_token"], request.json()["refresh_token"]
-
-    def generate_code_verifier(self) -> Tuple[str, int]:
-        rand = random.SystemRandom()
-        code_verifier = "".join(
-            rand.choices(string.ascii_letters + string.digits, k=90)
-        )
-
-        return str(code_verifier), len(code_verifier)
