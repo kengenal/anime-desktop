@@ -5,7 +5,7 @@ from typing import Tuple
 
 class PKCE:
     @staticmethod
-    def code_verifier(self) -> Tuple[str, int]:
+    def code_verifier() -> Tuple[str, int]:
         rand = random.SystemRandom()
         code_verifier = "".join(
             rand.choices(string.ascii_letters + string.digits, k=90)
