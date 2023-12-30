@@ -14,6 +14,9 @@ from gi.repository import Adw, Gio, Gtk
 from pages.login_page import LoginPage
 from pages.search_page import SearchPage
 from utils.secure_store import SecureStore
+from services.mal_service import MalService
+from exceptions.mal_exceptions import MalAuthorizationException
+import threading
 from pages.settings_page import SettingsPage
 from pages.watching_page import WatchingPage
 from store.user_store import UserStore
@@ -61,7 +64,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.flap.set_flap(flap=stack_sidebar)
         self.user_store.connect("value-changed", self.update)
 
-        self._is_user_login()
+        threading.Thread(target=self._is_user_login(), daemon=True).start()
 
     def on_flap_button_toggled(self, *args, **kwargs):
         self.flap.set_reveal_flap(not self.flap.get_reveal_flap())
@@ -153,7 +156,14 @@ class MainWindow(Gtk.ApplicationWindow):
     def _is_user_login(self):
         secure_store = SecureStore()
         if secure_store.exists("token"):
-            self.user_store.is_login = True
+            try:
+                mal_service = MalService()
+                mal_ids = mal_service.user_anime(flat=True)
+                self.user_store.watching_anime = mal_ids
+                self.user_store.is_login = True
+            except MalAuthorizationException:
+                self.user_store.is_login = False
+                self.user_store.watching_anime = set()
 
 
 class MyApp(Adw.Application):

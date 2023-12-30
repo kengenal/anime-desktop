@@ -34,7 +34,6 @@ class MalClient(requests.Session):
 
         payload["headers"]["Authorization"] = f"Bearer {token}"
         request = super().request(**payload)
-        print("RQUEST", request.json())
         if request.status_code == 401:
             return self._refresh_token(payload=payload)
 
