@@ -16,16 +16,16 @@ class UserStore(GObject.Object):
     def __init__(self):
         super().__init__()
         self._is_login = False
-        self._watching_anime = set()
+        self._watching_anime_ids = set()
 
     @property
-    def watching_anime(self) -> Set:
-        return self._watching_anime
+    def watching_anime_ids(self) -> Set:
+        return self._watching_anime_ids
 
-    @watching_anime.setter
-    def watching_anime(self, new_value: Set) -> None:
-        self._watching_anime = new_value
-        self.emit("user-library-update", "watching_anime", new_value)
+    @watching_anime_ids.setter
+    def watching_anime_ids(self, new_value: Set) -> None:
+        self._watching_anime_ids = new_value
+        self.emit("user-library-update", "watching_anime_ids", new_value)
 
     @property
     def is_login(self) -> bool:

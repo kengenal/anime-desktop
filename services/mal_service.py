@@ -16,15 +16,15 @@ class MalService:
     def __init__(self):
         self.client = MalClient()
 
-    def user_anime(self, flat=False, status: Status = Status.WATCHING):
-        payload = {"status": status}
+    def user_anime(self, flat=False, status: Status = None):
+        payload = {}
+        if status:
+            payload["status"] = status
         request = self.client.get(
             "users/@me/animelist?fields=list_status",
             params=payload,
         )
         data: Mal = Mal.from_payload(payload=request.json())
-        if flat:
-            return set([x.node.id for x in data.data])
         return data
         if flat:
             return set([x.node.id for x in data.data])

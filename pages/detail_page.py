@@ -5,9 +5,11 @@ from gi.repository import Gtk
 
 from pages.episode_page import EpisodePage
 from services.jikan_service import JikanService
+from services.mal_service import Status
 from services.x_service import XService
 from store.episode_store import EpisodeSotre
 from widgets.detial_header import DetailHeader
+from widgets.dialogs import InfoDialog
 from widgets.episodes_list_widget import EpisodesListWidget
 from widgets.page import Page
 
@@ -32,15 +34,26 @@ class DetailPage(Page):
         self.mal_id = mal_id
         self.database_connection = database_connection
         self.box = Gtk.Box()
+        self.box_in_headerbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.mal_id = mal_id
         self.jikan_service = JikanService()
         self.stack_for_switcher = Gtk.Stack()
         self.stack_for_switcher.props.transition_type = (
             Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
         )
-        self.stack_switcher = Gtk.StackSwitcher(stack=self.stack_for_switcher)
+        self.stack_switcher = Gtk.StackSwitcher(
+            stack=self.stack_for_switcher, margin_start=80, margin_end=80
+        )
 
-        header_bar.set_title_widget(self.stack_switcher)
+        self.watch_button = Gtk.Button(label="Settings")
+
+        self.watch_button.connect("clicked", self.watch_or_settings)
+
+        self.box_in_headerbar.append(self.stack_switcher)
+        self.box_in_headerbar.append(self.watch_button)
+
+        header_bar.set_title_widget(self.box_in_headerbar)
+
         self.episode_store = EpisodeSotre(mal_id=mal_id)
         self.episode_store.connect("value-changed", self.set_episodes)
 
@@ -48,9 +61,6 @@ class DetailPage(Page):
 
         self.detail_header = DetailHeader()
         self.detail_header.strat_loading()
-
-        self.watch_button = Gtk.Button(label="Watch")
-        self.watch_button.connect("clicked", self.load_episodes)
 
         self.info_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
@@ -63,17 +73,32 @@ class DetailPage(Page):
         self.add_child(self.stack_for_switcher)
         self.x_service = XService()
 
-        self.info_page.append(child=self.watch_button)
         self.info_page.append(child=self.detail_header)
+        self.info_dialog = InfoDialog()
+        self.info_dialog.remove_button.connect("clicked", self._remove_from_lib)
+        self.info_dialog.add_to_watching_button.connect(
+            "clicked", self._update_user_library_anime_status, Status.WATCHING
+        )
+        self.info_dialog.plan_to_watch_button.connect(
+            "clicked",
+            self._update_user_library_anime_status,
+            Status.PLAN_TO_WATCH,
+        )
+        self.info_dialog.completed_button.connect(
+            "clicked", self._update_user_library_anime_status, Status.COMPLETED
+        )
+        self.info_dialog.dropped_button.connect(
+            "clicked", self._update_user_library_anime_status, Status.DROPPED
+        )
 
         threading.Thread(target=self.load_anime, daemon=True).start()
         threading.Thread(target=self._check, daemon=True).start()
 
     def on_destroy(self):
-        self.header_bar.remove(child=self.stack_switcher)
+        self.header_bar.remove(child=self.box_in_headerbar)
 
     def on_load(self):
-        self.header_bar.set_title_widget(self.stack_switcher)
+        self.header_bar.set_title_widget(self.box_in_headerbar)
 
     def load_anime(self):
         data = self.jikan_service.get_by_id(self.mal_id)
@@ -86,8 +111,9 @@ class DetailPage(Page):
         self.episode_widget.end_loading()
         self.episode_widget.set_episodes(self.episode_store.episodes)
 
-    def load_episodes(self, *args, **kwargs):
-        threading.Thread(target=self._load_episodes, daemon=True).start()
+    def watch_or_settings(self, *args, **kwargs):
+        self.info_dialog.set_transient_for(self.get_native())
+        self.info_dialog.present()
 
     def go_to(self, _: Gtk.Button, episode_number: int):
         destination = EpisodePage(
@@ -105,19 +131,29 @@ class DetailPage(Page):
     def _check(self):
         self.episode_widget.start_loading()
         to_fetch = self.x_service.check(mal_id=self.mal_id)
-        if to_fetch is True:
+        if (
+            to_fetch is True
+            or self.mal_id in self.user_store.watching_anime_ids
+        ):
             self._load_episodes()
         else:
             self.episode_widget.end_loading()
             self.episode_widget.set_label()
 
     def _load_episodes(self):
-        self.watch_button.set_sensitive(False)
+        self.info_dialog.update_status(Status.WATCHING)
         for episodes in self.x_service.fetch_eposodes(self.mal_id):
             if episodes is None:
                 return
             self.episode_store.episodes = episodes
-        self.watch_button.set_sensitive(True)
+
+    def _update_user_library_anime_status(self, _: Gtk.Button, status: Status):
+        self.info_dialog.update_status(status)
+        if status == Status.WATCHING:
+            threading.Thread(target=self._load_episodes, daemon=True).start()
+
+    def _remove_from_lib(self, _: Gtk.Button):
+        print("REMOVE")
 
     class Meta:
         name = "detail"
