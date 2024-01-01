@@ -2,7 +2,7 @@ from typing import List
 
 from gi.repository import GObject
 
-from models.episodes_model import EpisodeElement, Player
+from models.episodes_model import EpisodeElement
 
 
 class EpisodeSotre(GObject.Object):

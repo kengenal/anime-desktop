@@ -3,11 +3,15 @@ from typing import List
 from gi.repository import Gtk
 
 from models.episodes_model import EpisodeElement
+from store.mal_library_store import MalLibraryStore
 
 
 class EpisodesListWidget(Gtk.Box):
-    def __init__(self, go_to, *args, **kwargs) -> None:
+    def __init__(
+        self, mal_store: MalLibraryStore, go_to, *args, **kwargs
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        self.mal_store = mal_store
         self.go_to = go_to
 
         self.spinner = Gtk.Spinner(hexpand=True, vexpand=True, visible=True)
@@ -38,19 +42,29 @@ class EpisodesListWidget(Gtk.Box):
         self.scroll_view.set_child()
         self.scroll_view.set_child(child=self.flow_box)
 
-    def set_episodes(self, episodes: List[EpisodeElement]):
+    def set_episodes(
+        self, episodes: int, available_episodes: List[EpisodeElement]
+    ):
         self.append(self.scroll_view)
         self.flow_box.remove_all()
-        sorted_episodes = sorted(episodes, key=lambda x: x.episode)
-        for episode in sorted_episodes:
-            button = Gtk.Button(
-                label=str(episode.episode),
-                css_classes=["card-button", "ctitle"],
-                height_request=300,
-                width_request=300,
-            )
-            button.connect("clicked", self.go_to, episode.episode)
-            self.flow_box.append(child=button)
+        if len(available_episodes) > 1:
+            for episode in range(1, episodes):
+                is_episod_available = [
+                    x for x in available_episodes if x.episode == episode
+                ]
+                button = Gtk.Button(
+                    label=str(episode),
+                    css_classes=["card-button", "ctitle"],
+                    height_request=300,
+                    width_request=300,
+                )
+                if episode <= self.mal_store.num_watched_episodes:
+                    button.add_css_class("watched-button ")
+                if is_episod_available:
+                    button.connect("clicked", self.go_to, episode)
+                else:
+                    button.set_sensitive(False)
+                self.flow_box.append(child=button)
 
     def start_loading(self):
         self.spinner.set_visible(True)

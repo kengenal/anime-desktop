@@ -13,7 +13,7 @@ class InfoDialog(Gtk.Dialog):
         self.box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
         )
-        self.add_to_watching_button = Gtk.Button(
+        self.watch = Gtk.Button(
             label="Watch",
             hexpand=True,
             vexpand=True,
@@ -76,17 +76,11 @@ class InfoDialog(Gtk.Dialog):
             margin_bottom=20,
         )
         self.prev_status = None
-        self.box.append(self.add_to_watching_button)
+        self.box.append(self.watch)
         self.box.append(self.plan_to_watch_button)
         self.box.append(self.dropped_button)
         self.box.append(self.remove_button)
-        self.set_child(self.box)
-
-    def disable_watch_button(self):
-        self.add_to_watching_button.set_sensitive(False)
-
-    def enable_watch_button(self):
-        self.add_to_watching_button.set_sensitive(True)
+        self.set_child(child=self.box)
 
     def update_status(self, status: Status):
         if self.prev_status:

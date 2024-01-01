@@ -41,19 +41,10 @@ class EpisodeDatabase:
         return res.fetchone()
 
     def clear_cashe(self) -> None:
-        query = self.db.execute(
+        self.db.execute(
             f"""
-                SELECT public_id FROM {self.table_name}
-                WHERE
-                datetime(timestamp, '+{self.cashe_lifetime} Hour') <= datetime('now')
-            """
+            DELETE FROM {self.table_name} 
+            WHERE datetime(timestamp, '+{self.cashe_lifetime} Hour') <= datetime('now')
+            """,
         )
-        get_ids = [x[0] for x in query.fetchall()]
-        if get_ids:
-            self.db.execute(
-                f"""
-                    DELETE FROM {self.table_name} WHERE public_id IN (?)
-                    """,
-                (",".join(get_ids)),
-            )
-            self.conn.commit()
+        self.conn.commit()
