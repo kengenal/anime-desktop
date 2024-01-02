@@ -143,7 +143,12 @@ class DetailPage(Page):
             threading.Thread(target=self._load_episodes, daemon=True).start()
 
     def _remove_from_lib(self, _: Gtk.Button):
-        print("REMOVE")
+        self.user_store.update_user_anime(
+            prev_status=self.mal_store.prev_status,
+            new_status=self.mal_store.status,
+            mal_id=self.mal_id,
+        )
+        self.mal_store.status = None
 
     def _create_lib_option_dialog(self, *args, **kwargs):
         self.info_dialog = InfoDialog()
@@ -165,6 +170,7 @@ class DetailPage(Page):
         self.info_dialog.dropped_button.connect(
             "clicked", self._update_user_library_anime_status, Status.DROPPED
         )
+        self.info_dialog.remove_button.connect("clicked", self._remove_from_lib)
 
     def _status_signal(self, *args, **kwargs) -> None:
         self.user_store.update_user_anime(

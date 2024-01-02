@@ -67,7 +67,7 @@ class MalLibraryStore(GObject.Object):
             self.emit("status-changed", "status", status)
 
     @property
-    def prev_status(self) -> Status:
+    def prev_status(self) -> Optional[Status]:
         return self._prev_status
 
     @property

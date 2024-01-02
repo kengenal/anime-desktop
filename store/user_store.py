@@ -74,10 +74,14 @@ class UserStore(GObject.Object):
             self.emit("value-changed", "is_login", new_value)
 
     def update_user_anime(
-        self, prev_status: Optional[Status], new_status: Status, mal_id: int
+        self,
+        prev_status: Optional[Status],
+        new_status: Optional[Status],
+        mal_id: int,
     ):
         data = copy(self._watching_anime_ids)
-        data[new_status].add(mal_id)
+        if new_status:
+            data[new_status].add(mal_id)
         if prev_status:
             data[prev_status].remove(mal_id)
         self.user_anime_ids = data
