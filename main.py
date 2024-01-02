@@ -18,6 +18,7 @@ from utils.secure_store import SecureStore
 from services.mal_service import MalService
 from exceptions.mal_exceptions import MalAuthorizationException
 from pages.completed_page import CompletedPage
+from dill import copy
 from services.mal_service import Status
 from pages.plan_to_watch_page import PlanToWatchPage
 from pages.settings_page import SettingsPage
@@ -167,12 +168,12 @@ class MainWindow(Gtk.ApplicationWindow):
         secure_store = SecureStore()
         if secure_store.exists("token"):
             try:
-                self.user_store.watching_anime_ids = {50265, 52305}
                 mal_service = MalService()
                 user_animes = mal_service.user_anime()
-                self.user_store.watching_anime_ids = set(
-                    [x.node.id for x in user_animes.data]
-                )
+                data = copy(self.user_store.user_anime_ids)
+                for x in user_animes.data:
+                    data[Status[x.list_status.status.upper()]].add(x.node.id)
+                self.user_store.user_anime_ids = data
                 self.user_store.is_login = True
             except MalAuthorizationException:
                 self.user_store.is_login = False

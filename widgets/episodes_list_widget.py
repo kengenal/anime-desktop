@@ -41,11 +41,11 @@ class EpisodesListWidget(Gtk.Box):
         self.flow_box.set_max_children_per_line(50)
         self.scroll_view.set_child()
         self.scroll_view.set_child(child=self.flow_box)
+        self.append(self.scroll_view)
 
     def set_episodes(
         self, episodes: int, available_episodes: List[EpisodeElement]
     ):
-        self.append(self.scroll_view)
         self.flow_box.remove_all()
         if len(available_episodes) > 1:
             for episode in range(1, episodes):
@@ -57,9 +57,10 @@ class EpisodesListWidget(Gtk.Box):
                     css_classes=["card-button", "ctitle"],
                     height_request=300,
                     width_request=300,
+                    name=str(episode),
                 )
                 if episode <= self.mal_store.num_watched_episodes:
-                    button.add_css_class("watched-button ")
+                    button.add_css_class("watched-button")
                 if is_episod_available:
                     button.connect("clicked", self.go_to, episode)
                 else:
@@ -82,7 +83,6 @@ class EpisodesListWidget(Gtk.Box):
     def remove_label(self):
         self.episode_not_found_label.set_visible(False)
 
-    #
     def _go_to_episode(self, _: Gtk.Button, episode_number: int):
         destination = self.page(episode_number=episode_number, **self.to_inject)
         self.stack.add_named(child=destination, name=self.page.Meta.name)

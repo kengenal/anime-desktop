@@ -5,6 +5,7 @@ from gi.repository import Gtk
 from models.mal_model import Mal
 from pages.detail_page import DetailPage
 from services.mal_service import MalService
+from store.mal_library_store import MalLibraryStore
 from widgets.card_lib_widget import CardLibWidget
 from widgets.page import Page
 
@@ -14,6 +15,7 @@ class BaseMalLib(Page):
         super().__init__(*args, **kwargs)
         self.status = None
         self.mal_service = MalService()
+        self.mal_store = MalLibraryStore()
         self.box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True
         )
@@ -37,13 +39,14 @@ class BaseMalLib(Page):
             Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC
         )
         self.scroll_window.set_child(self.flow_box)
-
+        self.mal_store.connect("list-changed", self._set_buttons)
         self.box.append(self.spinner)
         self.box.append(self.scroll_window)
 
         self.add_child(self.box)
 
-    def load_animes(self):
+    def load_animes(self, *args, **kwargs):
+        print("LOAD ANIME CALL")
         threading.Thread(target=self._load, daemon=True).start()
 
     def go_to_detail(self, button: Gtk.Button, mal_id: int):
@@ -52,6 +55,7 @@ class BaseMalLib(Page):
             user_store=self.user_store,
             stack=self.stack,
             header_bar=self.header_bar,
+            mal_store=self.mal_store,
             db=self.db,
             database_connection=self.database_connection,
         )
@@ -70,11 +74,15 @@ class BaseMalLib(Page):
     def _load(self):
         self._start_loading()
         user_anime_list: Mal = self.mal_service.user_anime(status=self.status)
-        for anime in user_anime_list.data:
+        self.mal_store.user_anime_list = user_anime_list.data
+        self._end_loading()
+
+    def _set_buttons(self, *args, **kwargs):
+        self.flow_box.remove_all()
+        for anime in self.mal_store.user_anime_list:
             button = Gtk.Button(css_classes=["card-button"])
             card = CardLibWidget(anime.node)
             button.set_child(child=card)
             button.connect("clicked", self.go_to_detail, anime.node.id)
             button.set_size_request(300, 300)
             self.flow_box.append(button)
-        self._end_loading()

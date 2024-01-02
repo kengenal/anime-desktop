@@ -7,6 +7,7 @@ class WatchingPage(BaseMalLib):
         super().__init__(*args, **kwargs)
         self.status = Status.WATCHING
         self.load_animes()
+        self.user_store.connect("watch-update", self.load_animes)
 
     class Meta:
         name = "watching"

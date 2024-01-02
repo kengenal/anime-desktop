@@ -1,5 +1,6 @@
 import threading
 from sqlite3 import Connection, Cursor
+from typing import Optional
 
 from gi.repository import Gtk
 
@@ -33,12 +34,13 @@ class DetailPage(Page):
             *args,
             **kwargs
         )
-        self.mal_id = mal_id
+        self.mal_id = MalLibraryStore()
         self.event = threading.Event()
         self.mal_store = MalLibraryStore()
         self.database_connection = database_connection
         self.mal_id = mal_id
         self.anime_info = None
+        self.prev_status = None
 
         self.jikan_service = JikanService()
         self.x_service = XService()
@@ -165,10 +167,15 @@ class DetailPage(Page):
         )
 
     def _status_signal(self, *args, **kwargs) -> None:
+        self.user_store.update_user_anime(
+            mal_id=self.mal_id,
+            prev_status=self.mal_store.prev_status,
+            new_status=self.mal_store.status,
+        )
         self.info_dialog.update_status(self.mal_store.status)
 
     def _num_watched_episodes_signal(self, *args, **kwargs):
-        print(self.mal_store.num_watched_episodes)
+        self.set_episodes()
 
     def _load_anime(self):
         data = self.jikan_service.get_by_id(self.mal_id)
@@ -192,8 +199,7 @@ class DetailPage(Page):
             self.episode_widget.set_label()
 
     def _load_episodes(self):
-        self.info_dialog.update_status(Status.WATCHING)
-        self.mal_store.status = Status.WATCHING
+        self.info_dialog.update_status(self.mal_store.status)
         for episodes in self.x_service.fetch_eposodes(self.mal_id):
             if episodes is None:
                 return

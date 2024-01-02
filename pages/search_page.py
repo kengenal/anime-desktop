@@ -1,4 +1,3 @@
-import gi
 from gi.repository import GLib, Gtk
 
 from pages.detail_page import DetailPage
@@ -15,7 +14,6 @@ class SearchPage(Page):
         self.is_loading = False
         self.page = 1
         self.query = ""
-
         self.jikan_service = JikanService()
         self.search = Gtk.SearchEntry()
         self.search.connect("search-changed", self.on_search)

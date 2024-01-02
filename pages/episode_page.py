@@ -60,7 +60,8 @@ class EpisodePage(Page):
         self.header_bar.set_title_widget(self.header_box)
 
     def on_destroy(self):
-        self.selenium_service.quit()
+        if self.selenium_is_setup:
+            self.selenium_service.quit()
         self.header_bar.remove(child=self.header_box)
         self.selenium_is_setup = False
 
