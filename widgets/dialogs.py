@@ -77,6 +77,7 @@ class InfoDialog(Gtk.Dialog):
         )
         self.prev_status = None
         self.box.append(self.watch)
+        self.box.append(self.completed_button)
         self.box.append(self.plan_to_watch_button)
         self.box.append(self.dropped_button)
         self.box.append(self.remove_button)

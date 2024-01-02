@@ -1,11 +1,12 @@
-# isort: skip_file
-# fmt: off
 import sqlite3
 import sys
+import threading
 from typing import List
 
 import gi
 
+# isort: skip_file
+# fmt: off
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
@@ -16,7 +17,9 @@ from pages.search_page import SearchPage
 from utils.secure_store import SecureStore
 from services.mal_service import MalService
 from exceptions.mal_exceptions import MalAuthorizationException
-import threading
+from pages.completed_page import CompletedPage
+from services.mal_service import Status
+from pages.plan_to_watch_page import PlanToWatchPage
 from pages.settings_page import SettingsPage
 from pages.watching_page import WatchingPage
 from store.user_store import UserStore
@@ -29,7 +32,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.user_store = UserStore()
 
         self.application: Gtk.Application = kwargs.get("application")
-        self.authorized_pages = [WatchingPage.Meta.name, SettingsPage.Meta.name]
+        self.authorized_pages = [
+            WatchingPage.Meta.name,
+            SettingsPage.Meta.name,
+            PlanToWatchPage.Meta.name,
+            CompletedPage.Meta.name,
+        ]
         self.last_navigation_page = None
         self.unauthorized_pages = [LoginPage.Meta.name]
         self.pages = (
@@ -98,6 +106,8 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.user_store.is_login:
             self.remove_pages_by_list(self.unauthorized_pages)
             self.register_side_bar_page(WatchingPage)
+            self.register_side_bar_page(PlanToWatchPage)
+            self.register_side_bar_page(CompletedPage)
             self.register_side_bar_page(SettingsPage)
 
     def remove_pages_by_list(self, li: List[str]):
@@ -157,13 +167,16 @@ class MainWindow(Gtk.ApplicationWindow):
         secure_store = SecureStore()
         if secure_store.exists("token"):
             try:
+                self.user_store.watching_anime_ids = {50265, 52305}
                 mal_service = MalService()
-                mal_ids = mal_service.user_anime(flat=True)
-                self.user_store.watching_anime = mal_ids
+                user_animes = mal_service.user_anime()
+                self.user_store.watching_anime_ids = set(
+                    [x.node.id for x in user_animes.data]
+                )
                 self.user_store.is_login = True
             except MalAuthorizationException:
                 self.user_store.is_login = False
-                self.user_store.watching_anime = set()
+                self.user_store.watching_anime_ids = set()
 
 
 class MyApp(Adw.Application):
