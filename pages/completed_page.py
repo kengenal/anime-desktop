@@ -7,7 +7,7 @@ class CompletedPage(BaseMalLib):
         super().__init__(*args, **kwargs)
         self.status = Status.COMPLETED
         self.load_animes()
-        self.user_store.connect("completed-update", self.load_animes)
+        # self.user_store.connect("completed-update", self.load_animes)
 
     class Meta:
         name = "Completed"

@@ -75,9 +75,9 @@ class UserStore(GObject.Object):
 
     def update_user_anime(
         self,
-        prev_status: Optional[Status],
-        new_status: Optional[Status],
         mal_id: int,
+        prev_status: Optional[Status] = None,
+        new_status: Optional[Status] = None,
     ):
         data = copy(self._watching_anime_ids)
         if new_status:

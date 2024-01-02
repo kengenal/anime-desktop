@@ -78,7 +78,7 @@ class SearchPage(Page):
         self.is_loading = False
 
     def scroll_position(
-        self, scroll_window: Gtk.ScrolledWindow, position: Gtk.PositionType
+        self, _: Gtk.ScrolledWindow, position: Gtk.PositionType
     ):
         if (
             position == Gtk.PositionType.BOTTOM
@@ -92,7 +92,7 @@ class SearchPage(Page):
         self.loader.set_spinning(True)
         self.loader.set_visible(True)
 
-    def go_to_detail(self, button: Gtk.Button, mal_id: int):
+    def go_to_detail(self, _: Gtk.Button, mal_id: int):
         destination = DetailPage(
             mal_id=mal_id,
             user_store=self.user_store,

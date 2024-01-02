@@ -1,5 +1,6 @@
 import threading
 from sqlite3 import Connection, Cursor
+from time import sleep
 from typing import Optional
 
 from gi.repository import Gtk
@@ -41,6 +42,7 @@ class DetailPage(Page):
         self.mal_id = mal_id
         self.anime_info = None
         self.prev_status = None
+        self.is_init = False
 
         self.jikan_service = JikanService()
         self.x_service = XService()
@@ -137,18 +139,17 @@ class DetailPage(Page):
         self.stack.add_named(child=destination, name=EpisodePage.Meta.name)
         self.stack.set_visible_child(destination)
 
-    def _update_user_library_anime_status(self, _: Gtk.Button, status: Status):
+    def _update_status_on_button_click_signal(
+        self, _: Gtk.Button, status: Status
+    ):
         self.mal_store.status = status
         if status == Status.WATCHING:
             threading.Thread(target=self._load_episodes, daemon=True).start()
-
-    def _remove_from_lib(self, _: Gtk.Button):
         self.user_store.update_user_anime(
+            mal_id=self.mal_id,
             prev_status=self.mal_store.prev_status,
             new_status=self.mal_store.status,
-            mal_id=self.mal_id,
         )
-        self.mal_store.status = None
 
     def _create_lib_option_dialog(self, *args, **kwargs):
         self.info_dialog = InfoDialog()
@@ -157,27 +158,35 @@ class DetailPage(Page):
         )
 
         self.info_dialog.watch.connect(
-            "clicked", self._update_user_library_anime_status, Status.WATCHING
+            "clicked",
+            self._update_status_on_button_click_signal,
+            Status.WATCHING,
         )
         self.info_dialog.plan_to_watch_button.connect(
             "clicked",
-            self._update_user_library_anime_status,
+            self._update_status_on_button_click_signal,
             Status.PLAN_TO_WATCH,
         )
         self.info_dialog.completed_button.connect(
-            "clicked", self._update_user_library_anime_status, Status.COMPLETED
+            "clicked",
+            self._update_status_on_button_click_signal,
+            Status.COMPLETED,
         )
         self.info_dialog.dropped_button.connect(
-            "clicked", self._update_user_library_anime_status, Status.DROPPED
+            "clicked",
+            self._update_status_on_button_click_signal,
+            Status.DROPPED,
         )
         self.info_dialog.remove_button.connect("clicked", self._remove_from_lib)
 
-    def _status_signal(self, *args, **kwargs) -> None:
+    def _remove_from_lib(self, _: Gtk.Button):
         self.user_store.update_user_anime(
+            prev_status=self.mal_store.status,
             mal_id=self.mal_id,
-            prev_status=self.mal_store.prev_status,
-            new_status=self.mal_store.status,
         )
+        self.mal_store.status = None
+
+    def _status_signal(self, *args, **kwargs) -> None:
         self.info_dialog.update_status(self.mal_store.status)
 
     def _num_watched_episodes_signal(self, *args, **kwargs):

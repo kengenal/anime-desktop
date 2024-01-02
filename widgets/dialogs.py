@@ -100,3 +100,11 @@ class InfoDialog(Gtk.Dialog):
         if buttons:
             return buttons[0]
         return None
+
+    def disable_all_buttons(self):
+        for x in self.box.observe_children():
+            x.set_sensitive(False)
+
+    def enalbe_all_buttons(self):
+        for button in self.box.observe_children():
+            button.set_sensitive(True)

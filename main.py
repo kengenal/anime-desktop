@@ -21,7 +21,6 @@ from pages.completed_page import CompletedPage
 from dill import copy
 from services.mal_service import Status
 from pages.plan_to_watch_page import PlanToWatchPage
-from pages.settings_page import SettingsPage
 from pages.watching_page import WatchingPage
 from store.user_store import UserStore
 # fmt: on
@@ -35,7 +34,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.application: Gtk.Application = kwargs.get("application")
         self.authorized_pages = [
             WatchingPage.Meta.name,
-            SettingsPage.Meta.name,
             PlanToWatchPage.Meta.name,
             CompletedPage.Meta.name,
         ]
@@ -109,7 +107,6 @@ class MainWindow(Gtk.ApplicationWindow):
             self.register_side_bar_page(WatchingPage)
             self.register_side_bar_page(PlanToWatchPage)
             self.register_side_bar_page(CompletedPage)
-            self.register_side_bar_page(SettingsPage)
 
     def remove_pages_by_list(self, li: List[str]):
         pages_to_remove = [
