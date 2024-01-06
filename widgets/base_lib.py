@@ -46,7 +46,6 @@ class BaseMalLib(Page):
         self.add_child(self.box)
 
     def load_animes(self, *args, **kwargs):
-        print("LOAD ANIME CALL")
         threading.Thread(target=self._load, daemon=True).start()
 
     def go_to_detail(self, button: Gtk.Button, mal_id: int):

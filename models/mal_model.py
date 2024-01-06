@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from dacite.core import from_dict
+
+from const.mal import Status
 
 
 @dataclass
@@ -45,3 +47,16 @@ class Mal:
     @staticmethod
     def from_payload(payload: Dict):
         return from_dict(data_class=Mal, data=payload)
+
+
+@dataclass
+class MalAnimeUpdate:
+    status: Optional[Status] = None
+    is_rewatching: Optional[bool] = None
+    score: Optional[int] = None
+    num_watched_episodes: Optional[int] = None
+    priority: Optional[int] = None
+    num_times_rewatched: Optional[int] = None
+    rewatch_value: Optional[int] = None
+    tags: Optional[str] = None
+    comments: Optional[str] = None

@@ -1,11 +1,12 @@
 import threading
 from sqlite3 import Connection, Cursor
-from time import sleep
-from typing import Optional
 
 from gi.repository import Gtk
 
-from exceptions.mal_exceptions import MalAuthorizationException
+from exceptions.mal_exceptions import (MalApiException,
+                                       MalAuthorizationException)
+from exceptions.ui_exceptions import UIException
+from models.mal_model import MalAnimeUpdate
 from pages.episode_page import EpisodePage
 from services.jikan_service import JikanService
 from services.mal_service import MalService, Status
@@ -35,75 +36,31 @@ class DetailPage(Page):
             *args,
             **kwargs
         )
-        self.mal_id = MalLibraryStore()
         self.event = threading.Event()
-        self.mal_store = MalLibraryStore()
         self.database_connection = database_connection
         self.mal_id = mal_id
         self.anime_info = None
         self.prev_status = None
-        self.is_init = False
+
+        self.mal_id = mal_id
+
+        self.mal_store = MalLibraryStore()
+        self.mal_store.status = None
+        self.episode_store = EpisodeSotre(mal_id=mal_id)
 
         self.jikan_service = JikanService()
         self.x_service = XService()
         self.mal_service = MalService()
 
-        self.box = Gtk.Box()
-        self.box_in_headerbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-
-        self.stack_for_switcher = Gtk.Stack()
-        self.stack_for_switcher.props.transition_type = (
-            Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
-        )
-        self.stack_switcher = Gtk.StackSwitcher(
-            stack=self.stack_for_switcher, margin_start=80, margin_end=80
-        )
-
-        self.settings_button = Gtk.Button(label="Settings")
-
-        self.settings_button.connect("clicked", self.watch_or_settings)
-
-        self.box_in_headerbar.append(self.stack_switcher)
-        self.box_in_headerbar.append(self.settings_button)
-
-        header_bar.set_title_widget(self.box_in_headerbar)
-
-        self.episode_store = EpisodeSotre(mal_id=mal_id)
-        self.episode_store.connect("value-changed", self.set_episodes)
-
         self.episode_widget = EpisodesListWidget(
             go_to=self.go_to, mal_store=self.mal_store
         )
-
         self.detail_header = DetailHeader()
-        self.detail_header.strat_loading()
 
-        self.info_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-        self.stack_for_switcher.add_titled(
-            child=self.info_page, name="info", title="Info"
-        )
-        self.stack_for_switcher.add_titled(
-            child=self.episode_widget, name="episodes", title="Episodes"
-        )
-        self.add_child(self.stack_for_switcher)
-        self.mal_store.status = None
-        self.info_page.append(child=self.detail_header)
-
+        self._init_ui()
+        self._connect_signals()
         self._create_lib_option_dialog()
-
-        self.mal_store.connect("status-changed", self._status_signal)
-        self.mal_store.connect(
-            "watched-episodes-changed", self._num_watched_episodes_signal
-        )
-
-        threading.Thread(target=self._load_anime, daemon=True).start()
-        threading.Thread(
-            target=self._check_and_fetch_episodes_is_available, daemon=True
-        ).start()
-        threading.Thread(
-            target=self._load_from_mal_if_user_is_login, daemon=True
-        ).start()
+        self._start_workers()
 
     def on_destroy(self):
         self.header_bar.remove(child=self.box_in_headerbar)
@@ -139,17 +96,43 @@ class DetailPage(Page):
         self.stack.add_named(child=destination, name=EpisodePage.Meta.name)
         self.stack.set_visible_child(destination)
 
-    def _update_status_on_button_click_signal(
-        self, _: Gtk.Button, status: Status
-    ):
-        self.mal_store.status = status
-        if status == Status.WATCHING:
-            threading.Thread(target=self._load_episodes, daemon=True).start()
-        self.user_store.update_user_anime(
-            mal_id=self.mal_id,
-            prev_status=self.mal_store.prev_status,
-            new_status=self.mal_store.status,
+    def _init_ui(self):
+        self.box = Gtk.Box()
+        self.info_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.box_in_headerbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.settings_button = Gtk.Button(label="Settings")
+
+        self.stack_for_switcher = Gtk.Stack()
+        self.stack_for_switcher.props.transition_type = (
+            Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
         )
+        self.stack_switcher = Gtk.StackSwitcher(
+            stack=self.stack_for_switcher, margin_start=80, margin_end=80
+        )
+
+        self.box_in_headerbar.append(self.stack_switcher)
+        self.box_in_headerbar.append(self.settings_button)
+
+        self.header_bar.set_title_widget(self.box_in_headerbar)
+        self.detail_header.strat_loading()
+
+        self.stack_for_switcher.add_titled(
+            child=self.info_page, name="info", title="Info"
+        )
+        self.stack_for_switcher.add_titled(
+            child=self.episode_widget, name="episodes", title="Episodes"
+        )
+        self.add_child(self.stack_for_switcher)
+        self.info_page.append(child=self.detail_header)
+
+    def _connect_signals(self):
+        self.episode_store.connect("value-changed", self.set_episodes)
+        self.mal_store.connect("status-changed", self._status_changed)
+        self.mal_store.connect(
+            "watched-episodes-changed", self._num_watched_changed
+        )
+
+        self.settings_button.connect("clicked", self.watch_or_settings)
 
     def _create_lib_option_dialog(self, *args, **kwargs):
         self.info_dialog = InfoDialog()
@@ -159,25 +142,48 @@ class DetailPage(Page):
 
         self.info_dialog.watch.connect(
             "clicked",
-            self._update_status_on_button_click_signal,
+            self._ubdate_status_clicked,
             Status.WATCHING,
         )
         self.info_dialog.plan_to_watch_button.connect(
             "clicked",
-            self._update_status_on_button_click_signal,
+            self._ubdate_status_clicked,
             Status.PLAN_TO_WATCH,
         )
         self.info_dialog.completed_button.connect(
             "clicked",
-            self._update_status_on_button_click_signal,
+            self._ubdate_status_clicked,
             Status.COMPLETED,
         )
         self.info_dialog.dropped_button.connect(
             "clicked",
-            self._update_status_on_button_click_signal,
+            self._ubdate_status_clicked,
             Status.DROPPED,
         )
+        if self.mal_store.status:
+            self.info_dialog.update_status(status=self.mal_store.status)
         self.info_dialog.remove_button.connect("clicked", self._remove_from_lib)
+
+    def _start_workers(self):
+        threading.Thread(target=self._load_anime, daemon=True).start()
+        threading.Thread(
+            target=self._check_and_fetch_episodes_is_available, daemon=True
+        ).start()
+        threading.Thread(
+            target=self._load_from_mal_if_user_is_login, daemon=True
+        ).start()
+
+    def _ubdate_status_clicked(self, _: Gtk.Button, status: Status):
+        def do_update():
+            self._update_mal_lib(
+                payload=MalAnimeUpdate(status=self.mal_store.status)
+            )
+            self._update_status_in_mal_store()
+
+        self.mal_store.status = status
+        threading.Thread(target=do_update, daemon=True).start()
+        if status == Status.WATCHING:
+            threading.Thread(target=self._load_episodes, daemon=True).start()
 
     def _remove_from_lib(self, _: Gtk.Button):
         self.user_store.update_user_anime(
@@ -186,13 +192,26 @@ class DetailPage(Page):
         )
         self.mal_store.status = None
 
-    def _status_signal(self, *args, **kwargs) -> None:
+    def _status_changed(self, *args, **kwargs) -> None:
+        """
+        This run everytime where status was change
+        """
         self.info_dialog.update_status(self.mal_store.status)
 
-    def _num_watched_episodes_signal(self, *args, **kwargs):
+    def _num_watched_changed(self, *args, **kwargs):
         self.set_episodes()
 
+    def _update_status_in_mal_store(self):
+        self.user_store.update_user_anime(
+            mal_id=self.mal_id,
+            prev_status=self.mal_store.prev_status,
+            new_status=self.mal_store.status,
+        )
+
     def _load_anime(self):
+        """
+        Load anime detail from jikan and display
+        """
         data = self.jikan_service.get_by_id(self.mal_id)
         self.detail_header.set_data(anime=data)
 
@@ -201,6 +220,9 @@ class DetailPage(Page):
         self.event.set()
 
     def _check_and_fetch_episodes_is_available(self):
+        """
+        Check is projectx has arleady fetched apisode and olso wait for and load anime
+        """
         self.event.wait()
         self.episode_widget.start_loading()
         to_fetch = self.x_service.check(mal_id=self.mal_id)
@@ -214,6 +236,10 @@ class DetailPage(Page):
             self.episode_widget.set_label()
 
     def _load_episodes(self):
+        """
+        If user add to watch or episode has been available
+        fetch episodes in loop
+        """
         self.info_dialog.update_status(self.mal_store.status)
         for episodes in self.x_service.fetch_eposodes(self.mal_id):
             if episodes is None:
@@ -221,6 +247,9 @@ class DetailPage(Page):
             self.episode_store.episodes = episodes
 
     def _load_from_mal_if_user_is_login(self):
+        """
+        If user is login get user info about current anime
+        """
         if not self.user_store.is_login:
             return
         try:
@@ -229,6 +258,20 @@ class DetailPage(Page):
             )
         except MalAuthorizationException:
             self.user_store.is_login = False
+
+    def _update_mal_lib(self, payload: MalAnimeUpdate):
+        self.info_dialog.disable_all_buttons()
+        try:
+            self.mal_service.update_possition(
+                mal_id=self.mal_id, payload=payload
+            )
+
+        except MalAuthorizationException:
+            self.user_store.is_login = False
+        except MalApiException as err:
+            raise UIException(err.value)
+        self.info_dialog.enalbe_all_buttons()
+        self.info_dialog.update_status(status=self.mal_store.status)
 
     class Meta:
         name = "detail"

@@ -1,16 +1,10 @@
-from enum import StrEnum
+from dataclasses import asdict
 from typing import Optional
 
-from models.mal_model import Datum, Mal
+from const.mal import Status
+from exceptions.mal_exceptions import MalApiException
+from models.mal_model import Datum, Mal, MalAnimeUpdate
 from utils.mal_client import MalClient
-
-
-class Status(StrEnum):
-    WATCHING = "watching"
-    COMPLETED = "completed"
-    ON_HOLD = "on_hold"
-    DROPPED = "dropped"
-    PLAN_TO_WATCH = "plan_to_watch"
 
 
 class MalService:
@@ -37,3 +31,13 @@ class MalService:
         if fetch_res:
             return fetch_res[0]
         return None
+
+    def update_possition(self, mal_id: int, payload: MalAnimeUpdate):
+        to_dict = {k: v for k, v in asdict(payload).items() if v is not None}
+        request = self.client.patch(
+            f"anime/{mal_id}/my_list_status",
+            to_dict,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        if request.status_code != 401 and request.status_code != 200:
+            raise MalApiException(status_code=request.status_code)

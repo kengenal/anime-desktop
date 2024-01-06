@@ -1,6 +1,6 @@
 from typing import Dict, Set
 
-from services.mal_service import Status
+from const.mal import Status
 
 
 def compare_and_get_keys(d1: Dict, d2: Dict) -> Set[Status]:

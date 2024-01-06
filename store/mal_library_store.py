@@ -2,8 +2,8 @@ from typing import List, Optional
 
 from gi.repository import GObject
 
+from const.mal import Status
 from models.mal_model import Datum
-from services.mal_service import Status
 
 
 class MalLibraryStore(GObject.Object):

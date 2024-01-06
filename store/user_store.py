@@ -3,7 +3,7 @@ from typing import Dict, Optional, Set
 from dill import copy
 from gi.repository import GObject
 
-from services.mal_service import Status
+from const.mal import Status
 from utils.compare import compare_and_get_keys
 
 

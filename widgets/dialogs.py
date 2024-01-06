@@ -2,7 +2,7 @@ from typing import Optional
 
 from gi.repository import Gtk
 
-from services.mal_service import Status
+from const.mal import Status
 
 
 class InfoDialog(Gtk.Dialog):

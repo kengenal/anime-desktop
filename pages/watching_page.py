@@ -1,4 +1,4 @@
-from services.mal_service import Status
+from const.mal import Status
 from widgets.base_lib import BaseMalLib
 
 

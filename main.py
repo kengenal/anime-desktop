@@ -17,9 +17,9 @@ from pages.search_page import SearchPage
 from utils.secure_store import SecureStore
 from services.mal_service import MalService
 from exceptions.mal_exceptions import MalAuthorizationException
+from const.mal import Status
 from pages.completed_page import CompletedPage
 from dill import copy
-from services.mal_service import Status
 from pages.plan_to_watch_page import PlanToWatchPage
 from pages.watching_page import WatchingPage
 from store.user_store import UserStore
