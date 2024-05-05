@@ -39,6 +39,13 @@ class MalService:
             to_dict,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
-        print(request.status_code)
+        if request.status_code != 401 and request.status_code != 200:
+            raise MalApiException(status_code=request.status_code)
+
+    def delete_anime_from_lib(self, mal_id: int):
+        request = self.client.delete(
+            f"anime/{mal_id}/my_list_status",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
         if request.status_code != 401 and request.status_code != 200:
             raise MalApiException(status_code=request.status_code)

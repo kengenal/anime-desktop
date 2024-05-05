@@ -185,10 +185,20 @@ class DetailPage(Page):
             threading.Thread(target=self._load_episodes, daemon=True).start()
 
     def _remove_from_lib(self, _: Gtk.Button):
+        def do_update():
+            try:
+                self.mal_service.delete_anime_from_lib(mal_id=self.mal_id)
+                raise UIException("Anime Has been removed from your lib")
+            except MalAuthorizationException:
+                self.user_store.is_login = False
+            except MalApiException as err:
+                raise UIException(err.value)
+
         self.user_store.update_user_anime(
             prev_status=self.mal_store.status,
             mal_id=self.mal_id,
         )
+        threading.Thread(target=do_update, daemon=True).start()
         self.mal_store.status = None
 
     def _status_changed(self, *args, **kwargs) -> None:
