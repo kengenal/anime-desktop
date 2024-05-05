@@ -48,9 +48,7 @@ class SeleniumService:
         self.episode_database.clear_cashe()
         for player in episode.players[:3]:
             if res := self.episode_database.get_casched_episode(
-                self._create_id(
-                    mal_id=mal_id, player=player, episode=episode.episode
-                )
+                self._create_id(mal_id=mal_id, player=player, episode=episode.episode)
             ):
                 c_id, url = res
                 yield episode.episode, Player(

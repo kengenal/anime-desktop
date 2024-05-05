@@ -6,7 +6,6 @@ from models.episodes_model import Player
 class PlayerWidget(Gtk.Box):
     def __init__(self, url: str, *args, **kwargs):
         self.url = url
-        print(url)
         super().__init__(*args, **kwargs)
         GLib.idle_add(self.load)
 
