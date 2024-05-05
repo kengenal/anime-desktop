@@ -13,7 +13,7 @@ from services.mal_service import MalService, Status
 from services.x_service import XService
 from store.episode_store import EpisodeSotre
 from store.mal_library_store import MalLibraryStore
-from widgets.detial_header import DetailHeader
+from widgets.detail_header import DetailHeader
 from widgets.dialogs import InfoDialog
 from widgets.episodes_list_widget import EpisodesListWidget
 from widgets.page import Page
@@ -53,7 +53,10 @@ class DetailPage(Page):
         self.mal_service = MalService()
 
         self.episode_widget = EpisodesListWidget(
-            go_to=self.go_to, mal_store=self.mal_store
+            go_to=self.go_to,
+            mal_store=self.mal_store,
+            episode_store=self.episode_store,
+            get_episode=self._get_episode,
         )
         self.detail_header = DetailHeader()
 
@@ -69,6 +72,8 @@ class DetailPage(Page):
         self.header_bar.set_title_widget(self.box_in_headerbar)
 
     def set_episodes(self, *args, **kwargs):
+        if not self.anime_info:
+            return
         self.episode_widget.remove_label()
         self.episode_widget.end_loading()
         self.episode_widget.set_episodes(
@@ -128,17 +133,13 @@ class DetailPage(Page):
     def _connect_signals(self):
         self.episode_store.connect("value-changed", self.set_episodes)
         self.mal_store.connect("status-changed", self._status_changed)
-        self.mal_store.connect(
-            "watched-episodes-changed", self._num_watched_changed
-        )
+        self.mal_store.connect("watched-episodes-changed", self._num_watched_changed)
 
         self.settings_button.connect("clicked", self.watch_or_settings)
 
     def _create_lib_option_dialog(self, *args, **kwargs):
         self.info_dialog = InfoDialog()
-        self.info_dialog.connect(
-            "close-request", self._create_lib_option_dialog
-        )
+        self.info_dialog.connect("close-request", self._create_lib_option_dialog)
 
         self.info_dialog.watch.connect(
             "clicked",
@@ -175,9 +176,7 @@ class DetailPage(Page):
 
     def _ubdate_status_clicked(self, _: Gtk.Button, status: Status):
         def do_update():
-            self._update_mal_lib(
-                payload=MalAnimeUpdate(status=self.mal_store.status)
-            )
+            self._update_mal_lib(payload=MalAnimeUpdate(status=self.mal_store.status))
             self._update_status_in_mal_store()
 
         self.mal_store.status = status
@@ -226,9 +225,8 @@ class DetailPage(Page):
         self.event.wait()
         self.episode_widget.start_loading()
         to_fetch = self.x_service.check(mal_id=self.mal_id)
-        if (
-            to_fetch is True
-            or self.mal_id in self.user_store.watching_anime_ids
+        if to_fetch is True or self.mal_id in self.user_store.user_anime_ids.get(
+            Status.WATCHING, {}
         ):
             self._load_episodes()
         else:
@@ -253,8 +251,8 @@ class DetailPage(Page):
         if not self.user_store.is_login:
             return
         try:
-            self.mal_store.mal_anime_info = (
-                self.mal_service.get_possition_by_mal_id(mal_id=self.mal_id)
+            self.mal_store.mal_anime_info = self.mal_service.get_possition_by_mal_id(
+                mal_id=self.mal_id
             )
         except MalAuthorizationException:
             self.user_store.is_login = False
@@ -262,9 +260,7 @@ class DetailPage(Page):
     def _update_mal_lib(self, payload: MalAnimeUpdate):
         self.info_dialog.disable_all_buttons()
         try:
-            self.mal_service.update_possition(
-                mal_id=self.mal_id, payload=payload
-            )
+            self.mal_service.update_possition(mal_id=self.mal_id, payload=payload)
 
         except MalAuthorizationException:
             self.user_store.is_login = False
@@ -272,6 +268,17 @@ class DetailPage(Page):
             raise UIException(err.value)
         self.info_dialog.enalbe_all_buttons()
         self.info_dialog.update_status(status=self.mal_store.status)
+
+    def _get_episode(self, episode: int):
+        def episode_job(episode):
+            data = self.x_service.fetch_episode(mal_id=self.mal_id, episode=episode)
+            if not data:
+                return
+            episodes = self.episode_store.episodes
+            episodes.append(data)
+            self.episode_store.episodes = episodes
+
+        threading.Thread(target=episode_job, daemon=True, args=(episode,)).start()
 
     class Meta:
         name = "detail"

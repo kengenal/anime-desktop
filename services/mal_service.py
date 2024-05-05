@@ -39,5 +39,6 @@ class MalService:
             to_dict,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
+        print(request.status_code)
         if request.status_code != 401 and request.status_code != 200:
             raise MalApiException(status_code=request.status_code)

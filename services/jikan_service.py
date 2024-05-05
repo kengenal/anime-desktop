@@ -1,7 +1,6 @@
 from typing import Optional
 
-
-from models.jikan_model import Jikan, Datum
+from models.jikan_model import Datum, Jikan
 from utils.jikan_client import JikanClinet
 
 
@@ -10,7 +9,7 @@ class JikanService:
         self.client = JikanClinet()
 
     def fetch_data(self, page: int = 1, query: Optional[str] = None) -> Jikan:
-        params = {"page": page, "q": "spy x family"}
+        params = {"page": page, "q": query}
         response = self.client.get(url="anime", params=params)
         return Jikan.from_payload(response.json())
 

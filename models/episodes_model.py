@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from dacite import from_dict
 
@@ -18,6 +18,8 @@ class EpisodeElement:
     name: str
     players: List[Player]
     lang: str
+    is_translated: bool
+    release_date: Optional[str]
 
 
 @dataclass
