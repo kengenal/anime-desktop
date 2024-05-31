@@ -55,8 +55,6 @@ class BaseMalLib(Page):
             stack=self.stack,
             header_bar=self.header_bar,
             mal_store=self.mal_store,
-            db=self.db,
-            database_connection=self.database_connection,
         )
         self.stack.add_named(child=destination, name=DetailPage.Meta.name)
         self.stack.set_visible_child(destination)

@@ -1,5 +1,4 @@
 import threading
-from sqlite3 import Connection, Cursor
 
 from gi.repository import Gtk
 
@@ -24,20 +23,15 @@ class DetailPage(Page):
         self,
         mal_id: int,
         header_bar: Gtk.HeaderBar,
-        db: Cursor,
-        database_connection: Connection,
         *args,
         **kwargs
     ):
         super().__init__(
             header_bar=header_bar,
-            db=db,
-            database_connection=database_connection,
             *args,
             **kwargs
         )
         self.event = threading.Event()
-        self.database_connection = database_connection
         self.mal_id = mal_id
         self.anime_info = None
         self.prev_status = None
@@ -95,8 +89,6 @@ class DetailPage(Page):
             stack=self.stack,
             user_store=self.user_store,
             header_bar=self.header_bar,
-            db=self.db,
-            database_connection=self.database_connection,
         )
         self.stack.add_named(child=destination, name=EpisodePage.Meta.name)
         self.stack.set_visible_child(destination)
@@ -209,6 +201,19 @@ class DetailPage(Page):
 
     def _num_watched_changed(self, *args, **kwargs):
         self.set_episodes()
+
+        def do_update():
+            try:
+                self.mal_service.update_possition(
+                    mal_id=self.mal_id,
+                    payload=MalAnimeUpdate(num_watched_episodes=self.mal_store.num_watched_episodes)
+                )
+
+            except MalAuthorizationException:
+                self.user_store.is_login = False
+            except MalApiException as err:
+                raise UIException(err.value)
+        threading.Thread(target=do_update, daemon=True).start()
 
     def _update_status_in_mal_store(self):
         self.user_store.update_user_anime(
