@@ -98,8 +98,6 @@ class SearchPage(Page):
             user_store=self.user_store,
             stack=self.stack,
             header_bar=self.header_bar,
-            db=self.db,
-            database_connection=self.database_connection,
         )
         self.stack.add_named(child=destination, name=DetailPage.Meta.name)
         self.stack.set_visible_child(destination)

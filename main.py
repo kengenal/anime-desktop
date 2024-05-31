@@ -148,13 +148,11 @@ class MainWindow(Gtk.ApplicationWindow):
             "user_store": self.user_store,
             "header_bar": self.header_bar,
             "application": self.application,
-            "db": self.application.cursor,
-            "database_connection": self.application.database_connection,
         }
 
     def _load_css(self):
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_file(Gio.File.new_for_path("styles/card.css"))
+        css_provider.load_from_file(Gio.File.new_for_path("styles/main.css"))
         Gtk.StyleContext.add_provider_for_display(
             self.get_display(),
             css_provider,
@@ -181,21 +179,13 @@ class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.database_connection = sqlite3.connect(
-            "app.db", check_same_thread=False
-        )
-        self.cursor = self.database_connection.cursor()
         self.connect("activate", self.on_activate)
-        self.connect("shutdown", self.on_shutdown)
         self.win = None
 
     def on_activate(self, app: Adw.Application):
         self.win = MainWindow(application=app)
         self.win.set_default_size(1070, 720)
         self.win.present()
-
-    def on_shutdown(self, *args, **kwargs):
-        self.database_connection.close()
 
 
 def main():
